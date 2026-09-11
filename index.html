@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firewatch Outpost 3D - HD Enhanced Edition</title>
+    <title>Firewatch Outpost 3D - Balcony & Interior Edition</title>
     <style>
         * {
             box-sizing: border-box;
@@ -125,17 +125,6 @@
             background: rgba(255, 158, 89, 0.15);
             transform: translateY(-4px);
         }
-        #damage-flash {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255,0,0,0) 60%, rgba(255,0,0,0.4) 100%);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.1s ease;
-        }
         #blocker {
             position: absolute;
             top: 0;
@@ -207,7 +196,6 @@
 </head>
 <body>
     <canvas id="game-canvas"></canvas>
-    <div id="damage-flash"></div>
     <div id="hud">
         <div class="hud-top">
             <div class="card">
@@ -229,17 +217,17 @@
     </div>
     <div id="blocker">
         <div id="instructions">
-            <h1>FIREWATCH OUTPOST - HD EDITION</h1>
-            <p>Ascend the tower stairs smoothly, explore the fully furnished cabin, and survive the night!</p>
+            <h1>FIREWATCH OUTPOST - BALCONY EDITION</h1>
+            <p>Walk out onto the expanded balcony, relax on the cabin bed, and shoot incoming targets with full recoil animations!</p>
             <div class="controls-grid">
-                <div><span>WASD</span> : Move / Drive</div>
+                <div><span>WASD</span> : Move Around</div>
                 <div><span>Mouse</span> : Aim / Look Around</div>
-                <div><span>Left Click</span> : Shoot Weapon</div>
-                <div><span>E</span> : Enter Truck / Toggle Cabin Door</div>
+                <div><span>Left Click</span> : Shoot (With Recoil)</div>
+                <div><span>E</span> : Toggle Cabin Door / Drive</div>
                 <div><span>1, 2, 3</span> : Switch Weapons</div>
                 <div><span>Space</span> : Jump</div>
             </div>
-            <button id="play-btn">START SURVIVAL</button>
+            <button id="play-btn">START GAME</button>
         </div>
     </div>
 
@@ -266,19 +254,19 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(450, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(20, this.ctx.currentTime + 0.12);
-                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+                osc.frequency.setValueAtTime(500, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.12);
+                osc.stop(this.ctx.currentTime + 0.15);
             }
 
             playShotgunShot() {
                 if (!this.ctx) return;
-                const bufferSize = this.ctx.sampleRate * 0.25;
+                const bufferSize = this.ctx.sampleRate * 0.3;
                 const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) {
@@ -288,11 +276,11 @@
                 noise.buffer = buffer;
                 const filter = this.ctx.createBiquadFilter();
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(900, this.ctx.currentTime);
-                filter.frequency.linearRampToValueAtTime(60, this.ctx.currentTime + 0.25);
+                filter.frequency.setValueAtTime(1000, this.ctx.currentTime);
+                filter.frequency.linearRampToValueAtTime(50, this.ctx.currentTime + 0.3);
                 const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.7, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
                 noise.connect(filter);
                 filter.connect(gain);
                 gain.connect(this.ctx.destination);
@@ -304,14 +292,14 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'square';
-                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.35);
-                gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+                osc.frequency.setValueAtTime(700, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.4);
+                gain.gain.setValueAtTime(0.7, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.35);
+                osc.stop(this.ctx.currentTime + 0.4);
             }
 
             playDoorSound() {
@@ -319,14 +307,14 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(70, this.ctx.currentTime + 0.22);
-                gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.22);
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(80, this.ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.22);
+                osc.stop(this.ctx.currentTime + 0.2);
             }
 
             playFootstep() {
@@ -334,9 +322,9 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(80, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(90, this.ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.08);
-                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
@@ -396,6 +384,10 @@
         let wave = 1;
         let doorOpen = false;
         let footstepTimer = 0;
+
+        // Shooting animation variables
+        let recoilOffset = 0;
+        let recoilRot = 0;
 
         const player = {
             height: 1.8,
@@ -483,7 +475,6 @@
                 trunk.receiveShadow = true;
                 treeGroup.add(trunk);
 
-                // Multi-tiered Pine Tree Leaves
                 for (let tier = 0; tier < 3; tier++) {
                     const radius = 3.2 - tier * 0.7;
                     const height = 4.5 - tier * 0.5;
@@ -501,7 +492,7 @@
         buildEnvironment();
 
         // ==========================================
-        // 5. TOWER, STAIRS & CABIN CONSTRUCTION
+        // 5. TOWER, BALCONY, BED & CABIN CONSTRUCTION
         // ==========================================
         const towerGroup = new THREE.Group();
         scene.add(towerGroup);
@@ -509,6 +500,8 @@
         const woodMat = new THREE.MeshStandardMaterial({ color: 0x4d301b, roughness: 0.7 });
         const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x2b1a0e, roughness: 0.8 });
         const cozyGlass = new THREE.MeshStandardMaterial({ color: 0xffb85c, transparent: true, opacity: 0.45, roughness: 0.1 });
+        const bedMat = new THREE.MeshStandardMaterial({ color: 0x8b2626, roughness: 0.6 });
+        const pillowMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
 
         // Support Pillars
         for (let x of [-3.5, 3.5]) {
@@ -531,24 +524,31 @@
         brace2.rotation.x = -Math.PI / 4;
         towerGroup.add(brace1, brace2);
 
-        // Deck Base Platform
-        const mainDeck = new THREE.Mesh(new THREE.BoxGeometry(9, 0.4, 9), woodMat);
+        // Extended Platform (Cabin Floor + Outer Balcony)
+        const mainDeck = new THREE.Mesh(new THREE.BoxGeometry(11, 0.4, 11), woodMat);
         mainDeck.position.set(0, 10.2, 0);
         mainDeck.receiveShadow = true;
         mainDeck.castShadow = true;
         towerGroup.add(mainDeck);
 
-        // Deck Railings
+        // Outer Balcony Railings
         const railMat = new THREE.MeshStandardMaterial({ color: 0x2e1b0e });
-        const rNorth = new THREE.Mesh(new THREE.BoxGeometry(9, 0.9, 0.15), railMat);
-        rNorth.position.set(0, 10.75, -4.4);
-        const rEast = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.9, 9), railMat);
-        rEast.position.set(4.4, 10.75, 0);
-        const rWest = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.9, 9), railMat);
-        rWest.position.set(-4.4, 10.75, 0);
-        towerGroup.add(rNorth, rEast, rWest);
+        const rNorth = new THREE.Mesh(new THREE.BoxGeometry(11, 1.1, 0.15), railMat);
+        rNorth.position.set(0, 10.85, -5.4);
+        const rEast = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.1, 11), railMat);
+        rEast.position.set(5.4, 10.85, 0);
+        const rWest = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.1, 11), railMat);
+        rWest.position.set(-5.4, 10.85, 0);
+        
+        // South Railing with gap for stairwell entrance
+        const rSouthL = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.1, 0.15), railMat);
+        rSouthL.position.set(-3.3, 10.85, 5.4);
+        const rSouthR = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.1, 0.15), railMat);
+        rSouthR.position.set(3.3, 10.85, 5.4);
 
-        // Cabin Walls
+        towerGroup.add(rNorth, rEast, rWest, rSouthL, rSouthR);
+
+        // Cabin Inner Walls
         const wallW = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.2, 5.2), woodMat);
         wallW.position.set(-2.6, 12, 0);
         const wallE = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.2, 5.2), woodMat);
@@ -563,14 +563,23 @@
         wallSRight.position.set(1.7, 12, 2.6);
         towerGroup.add(wallW, wallE, wallN, wallSLeft, wallSRight);
 
-        // Detailed Cozy Cabin Interior
-        const rug = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.02, 24), new THREE.MeshStandardMaterial({ color: 0x8b2626 }));
+        // Cozy Cabin Bed
+        const bedFrame = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 2.2), darkWoodMat);
+        bedFrame.position.set(1.5, 10.6, -1.3);
+        const mattress = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.3, 2.0), bedMat);
+        mattress.position.set(1.5, 10.85, -1.3);
+        const pillow = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.15, 0.5), pillowMat);
+        pillow.position.set(1.5, 11.05, -2.0);
+        towerGroup.add(bedFrame, mattress, pillow);
+
+        // Cabin Desk & Radio
+        const rug = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.02, 24), new THREE.MeshStandardMaterial({ color: 0x3d5a80 }));
         rug.position.set(0, 10.42, 0);
         towerGroup.add(rug);
 
-        const desk = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.8, 0.8), darkWoodMat);
+        const desk = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.8, 0.8), darkWoodMat);
         desk.position.set(-1.4, 10.8, -1.8);
-        const chair = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), woodMat);
+        const chair = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), woodMat);
         chair.position.set(-1.4, 10.7, -1.0);
 
         const radioBox = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.3), darkMetalMat);
@@ -603,7 +612,7 @@
         towerGroup.add(cozyLight);
 
         // Tower Roof
-        const towerRoof = new THREE.Mesh(new THREE.ConeGeometry(6.5, 2.2, 4), darkWoodMat);
+        const towerRoof = new THREE.Mesh(new THREE.ConeGeometry(7.5, 2.2, 4), darkWoodMat);
         towerRoof.position.set(0, 14.7, 0);
         towerRoof.rotation.y = Math.PI / 4;
         towerRoof.castShadow = true;
@@ -612,7 +621,7 @@
         // Visual Staircase Geometry
         const STAIR_COUNT = 26;
         const STAIR_START_Z = 13.8;
-        const STAIR_END_Z = 4.2;
+        const STAIR_END_Z = 5.2;
         const STAIR_HEIGHT = 10.2;
 
         for (let i = 0; i < STAIR_COUNT; i++) {
@@ -627,21 +636,11 @@
             towerGroup.add(step);
         }
 
-        // Visual Staircase Railings
-        for (let side of [-1.2, 1.2]) {
-            const railPoleStart = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3), railMat);
-            railPoleStart.position.set(side, 1.5, STAIR_START_Z);
-            const railPoleEnd = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3), railMat);
-            railPoleEnd.position.set(side, STAIR_HEIGHT + 1.2, STAIR_END_Z);
-            towerGroup.add(railPoleStart, railPoleEnd);
-        }
-
         // ==========================================
         // 6. RANGER TRUCK MODEL BUILD
         // ==========================================
         const truck = new THREE.Group();
         const truckBodyMat = new THREE.MeshStandardMaterial({ color: 0xaa2e1e, roughness: 0.3, metalness: 0.2 });
-        const truckDetailMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.5 });
         const glassMat = new THREE.MeshStandardMaterial({ color: 0xaaddee, transparent: true, opacity: 0.6 });
 
         const mainChassis = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5.0), truckBodyMat);
@@ -727,7 +726,6 @@
             blocker.style.display = (document.pointerLockElement === canvas) ? 'none' : 'flex';
         });
 
-        // FIXED UNSTABLE ROTATION: Pure Euler 'YXZ' look without roll angle
         document.addEventListener('mousemove', (e) => {
             if (document.pointerLockElement !== canvas) return;
             yaw -= e.movementX * 0.0022;
@@ -782,12 +780,18 @@
             });
         }
 
+        // Weapon Shooting + Visual Recoil Kick
         function shootWeapon() {
             canShoot = false;
             let cooldown = 150;
+            
+            // Trigger Visual Recoil Kick
+            recoilOffset = 0.18;
+            recoilRot = 0.15;
+
             if (activeWeaponSlot === 1) { audio.playRifleShot(); cooldown = 140; }
-            if (activeWeaponSlot === 2) { audio.playShotgunShot(); cooldown = 600; }
-            if (activeWeaponSlot === 3) { audio.playSniperShot(); cooldown = 850; }
+            if (activeWeaponSlot === 2) { audio.playShotgunShot(); cooldown = 600; recoilOffset = 0.3; }
+            if (activeWeaponSlot === 3) { audio.playSniperShot(); cooldown = 850; recoilOffset = 0.35; }
 
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
@@ -814,14 +818,14 @@
         }
 
         // ==========================================
-        // 9. PERFECTED STAIRS & FLOOR PHYSICS ENGINE
+        // 9. STAIRS & BALCONY FLOOR PHYSICS
         // ==========================================
         function calculateGroundHeight(px, pz) {
-            // Invisible Math Ramp Collision for Stairs: NEVER fall through!
+            // Invisible Math Ramp for Stairs
             const stairXMin = -1.6;
             const stairXMax = 1.6;
             const stairZMax = 14.2; 
-            const stairZMin = 4.0;  
+            const stairZMin = 5.0;  
 
             if (px >= stairXMin && px <= stairXMax && pz <= stairZMax && pz >= stairZMin) {
                 const stairProgress = (stairZMax - pz) / (stairZMax - stairZMin);
@@ -829,8 +833,8 @@
                 return player.height + rampHeight;
             }
 
-            // Main Tower Observation Deck Level
-            if (Math.abs(px) <= 4.4 && Math.abs(pz) <= 4.4 && player.position.y > 8.0) {
+            // Expanded Main Deck Level (Outer Balcony Walkway)
+            if (Math.abs(px) <= 5.3 && Math.abs(pz) <= 5.3 && player.position.y > 8.0) {
                 return 10.2 + player.height;
             }
 
@@ -859,9 +863,14 @@
             const targetDoorAngle = doorOpen ? -Math.PI / 2 : 0;
             doorPivot.rotation.y += (targetDoorAngle - doorPivot.rotation.y) * 0.1;
 
+            // Recoil Animation Recovery
+            recoilOffset += (0 - recoilOffset) * 0.15;
+            recoilRot += (0 - recoilRot) * 0.15;
+            weaponContainer.position.z = -0.5 + recoilOffset;
+            weaponContainer.rotation.x = recoilRot;
+
             if (document.pointerLockElement === canvas) {
                 if (!isDriving) {
-                    // Movement Vector Calculation
                     const moveVector = new THREE.Vector3();
                     if (keys['KeyW']) moveVector.z -= 1;
                     if (keys['KeyS']) moveVector.z += 1;
@@ -880,11 +889,11 @@
                     moveVector.applyEuler(new THREE.Euler(0, yaw, 0, 'YXZ'));
                     player.position.addScaledVector(moveVector, player.speed);
 
-                    // Stairs Math & Ground Collision Physics
+                    // Ground & Balcony Collision Physics
                     const groundTargetY = calculateGroundHeight(player.position.x, player.position.z);
 
                     player.position.y += player.verticalVelocity;
-                    player.verticalVelocity -= 0.009; // Gravity
+                    player.verticalVelocity -= 0.009;
 
                     if (player.position.y <= groundTargetY) {
                         player.position.y = groundTargetY;
@@ -892,7 +901,6 @@
                         player.isJumping = false;
                     }
 
-                    // CAMERA ROTATION CLEAN FIX (Prevents side wonkiness)
                     camera.position.copy(player.position);
                     camera.rotation.set(0, 0, 0);
                     camera.rotation.y = yaw;
@@ -914,7 +922,7 @@
                     }
 
                 } else {
-                    // Truck Steering & Vehicle Mechanics
+                    // Vehicle Mechanics
                     if (keys['KeyW']) truck.translateZ(0.38);
                     if (keys['KeyS']) truck.translateZ(-0.22);
                     if (keys['KeyA']) truck.rotation.y += 0.032;
@@ -925,7 +933,7 @@
                     camera.lookAt(truck.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
                 }
 
-                // Zombie Horde Pathfinding & Base Damage
+                // Zombie Horde Pathfinding
                 zombies.forEach(z => {
                     const dir = new THREE.Vector3(0, 0, 0).sub(z.mesh.position);
                     dir.y = 0;

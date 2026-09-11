@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firewatch Outpost 3D - Balcony & Interior Edition</title>
+    <title>Firewatch Outpost 3D - 4K Castle & Balcony Edition</title>
     <style>
         * {
             box-sizing: border-box;
@@ -17,12 +17,59 @@
             overflow: hidden;
             background-color: #020308;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* GOOGLE STYLE TAB BAR */
+        #google-tab-bar {
+            height: 42px;
+            background: #1e1f22;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            border-bottom: 1px solid #333;
+            z-index: 20;
+        }
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #2b2d31;
+            color: #f2f3f5;
+            padding: 6px 16px;
+            border-radius: 8px 8px 0 0;
+            font-size: 13px;
+            font-weight: 500;
+            max-width: 260px;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+        }
+        .tab-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+        .tab-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* VIEWPORT & HUD CONTAINER */
+        #viewport {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            overflow: hidden;
         }
         #game-canvas {
             width: 100%;
             height: 100%;
             display: block;
         }
+
+        /* HUD & OVERLAY */
         #hud {
             position: absolute;
             top: 0;
@@ -42,9 +89,9 @@
             align-items: flex-start;
         }
         .card {
-            background: rgba(10, 14, 26, 0.88);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 158, 89, 0.25);
+            background: rgba(10, 14, 26, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 158, 89, 0.3);
             border-radius: 14px;
             padding: 18px 28px;
             color: #fff;
@@ -150,7 +197,7 @@
         }
         #instructions h1 {
             color: #ff9e59;
-            font-size: 34px;
+            font-size: 32px;
             margin-bottom: 12px;
             letter-spacing: 1px;
         }
@@ -195,45 +242,58 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-    <canvas id="game-canvas"></canvas>
-    <div id="hud">
-        <div class="hud-top">
-            <div class="card">
-                <h2>Tower Integrity</h2>
-                <div class="health-bar-bg"><div id="health-fill" class="health-bar-fill"></div></div>
-            </div>
-            <div class="card" style="text-align: right;">
-                <h2>Wave <span id="wave-val">1</span> - Horde Remaining</h2>
-                <div id="zombie-count" class="value" style="color: #ff4b2b;">0</div>
-            </div>
-        </div>
-        <div id="crosshair"></div>
-        <div id="interaction-prompt">Press [E] to Interact</div>
-        <div id="weapon-select">
-            <div id="slot-1" class="weapon-slot active">[1] Rifle</div>
-            <div id="slot-2" class="weapon-slot">[2] Shotgun</div>
-            <div id="slot-3" class="weapon-slot">[3] Sniper</div>
+
+    <!-- GOOGLE STYLE TAB BAR WITH CASTLE PHOTO ICON -->
+    <div id="google-tab-bar">
+        <div class="tab">
+            <img class="tab-icon" src="https://images.unsplash.com/photo-1585543805890-6051f7829f98?auto=format&fit=crop&w=100&q=80" alt="Castle">
+            <span class="tab-title">Firewatch Castle Outpost 4K</span>
         </div>
     </div>
-    <div id="blocker">
-        <div id="instructions">
-            <h1>FIREWATCH OUTPOST - BALCONY EDITION</h1>
-            <p>Walk out onto the expanded balcony, relax on the cabin bed, and shoot incoming targets with full recoil animations!</p>
-            <div class="controls-grid">
-                <div><span>WASD</span> : Move Around</div>
-                <div><span>Mouse</span> : Aim / Look Around</div>
-                <div><span>Left Click</span> : Shoot (With Recoil)</div>
-                <div><span>E</span> : Toggle Cabin Door / Drive</div>
-                <div><span>1, 2, 3</span> : Switch Weapons</div>
-                <div><span>Space</span> : Jump</div>
+
+    <div id="viewport">
+        <canvas id="game-canvas"></canvas>
+
+        <div id="hud">
+            <div class="hud-top">
+                <div class="card">
+                    <h2>Tower Integrity</h2>
+                    <div class="health-bar-bg"><div id="health-fill" class="health-bar-fill"></div></div>
+                </div>
+                <div class="card" style="text-align: right;">
+                    <h2>Wave <span id="wave-val">1</span> - Horde Remaining</h2>
+                    <div id="zombie-count" class="value" style="color: #ff4b2b;">0</div>
+                </div>
             </div>
-            <button id="play-btn">START GAME</button>
+            <div id="crosshair"></div>
+            <div id="interaction-prompt">Press [E] to Interact</div>
+            <div id="weapon-select">
+                <div id="slot-1" class="weapon-slot active">[1] Rifle</div>
+                <div id="slot-2" class="weapon-slot">[2] Shotgun</div>
+                <div id="slot-3" class="weapon-slot">[3] Sniper</div>
+            </div>
+        </div>
+
+        <div id="blocker">
+            <div id="instructions">
+                <h1>OUTPOST DEFENSE - 4K CASTLE EDITION</h1>
+                <p>Step onto the wrap-around balcony, gaze through the see-through cabin windows, relax by the bed, and defend your tower against incoming waves using animated recoil weapons and audio feedback!</p>
+                <div class="controls-grid">
+                    <div><span>WASD</span> : Move Around</div>
+                    <div><span>Mouse</span> : Aim / Look Around</div>
+                    <div><span>Left Click</span> : Shoot (With Recoil)</div>
+                    <div><span>E</span> : Open Door / Drive Truck</div>
+                    <div><span>1, 2, 3</span> : Switch Weapons</div>
+                    <div><span>Space</span> : Jump</div>
+                </div>
+                <button id="play-btn">START SIMULATION</button>
+            </div>
         </div>
     </div>
 
     <script>
         // ==========================================
-        // 1. AUDIO SYNTHESIZER SYSTEM
+        // 1. AUDIO SYNTHESIZER ENGINE
         // ==========================================
         class SoundEngine {
             constructor() {
@@ -254,19 +314,19 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(500, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.15);
+                osc.frequency.setValueAtTime(520, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(25, this.ctx.currentTime + 0.16);
                 gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.16);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.15);
+                osc.stop(this.ctx.currentTime + 0.16);
             }
 
             playShotgunShot() {
                 if (!this.ctx) return;
-                const bufferSize = this.ctx.sampleRate * 0.3;
+                const bufferSize = this.ctx.sampleRate * 0.35;
                 const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) {
@@ -276,11 +336,11 @@
                 noise.buffer = buffer;
                 const filter = this.ctx.createBiquadFilter();
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(1000, this.ctx.currentTime);
-                filter.frequency.linearRampToValueAtTime(50, this.ctx.currentTime + 0.3);
+                filter.frequency.setValueAtTime(1100, this.ctx.currentTime);
+                filter.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.35);
                 const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.85, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
                 noise.connect(filter);
                 filter.connect(gain);
                 gain.connect(this.ctx.destination);
@@ -292,14 +352,14 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'square';
-                osc.frequency.setValueAtTime(700, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.4);
-                gain.gain.setValueAtTime(0.7, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+                osc.frequency.setValueAtTime(750, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(12, this.ctx.currentTime + 0.45);
+                gain.gain.setValueAtTime(0.75, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.45);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.4);
+                osc.stop(this.ctx.currentTime + 0.45);
             }
 
             playDoorSound() {
@@ -307,14 +367,14 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(80, this.ctx.currentTime + 0.2);
-                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(75, this.ctx.currentTime + 0.22);
+                gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.22);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.2);
+                osc.stop(this.ctx.currentTime + 0.22);
             }
 
             playFootstep() {
@@ -322,55 +382,67 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(90, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.08);
-                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.frequency.setValueAtTime(85, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(25, this.ctx.currentTime + 0.09);
+                gain.gain.setValueAtTime(0.14, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.09);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.08);
+                osc.stop(this.ctx.currentTime + 0.09);
             }
         }
 
         const audio = new SoundEngine();
 
         // ==========================================
-        // 2. THREE.JS SCENE & GRAPHICS SETUP
+        // 2. THREE.JS 4K GRAPHICS SETUP
         // ==========================================
+        const container = document.getElementById('viewport');
         const canvas = document.getElementById('game-canvas');
         const scene = new THREE.Scene();
 
-        const morningSky = new THREE.Color(0xff7e47);
+        const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+        
+        // 4K Ultra Quality WebGL Configuration
+        const renderer = new THREE.WebGLRenderer({ 
+            canvas, 
+            antialias: true, 
+            powerPreference: "high-performance",
+            precision: "highp"
+        });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.15;
+
+        // Atmosphere Setup
+        const morningSky = new THREE.Color(0xff844c);
         const nightSky = new THREE.Color(0x020308);
         scene.background = morningSky.clone();
 
-        const fog = new THREE.FogExp2(0xff8c53, 0.006);
+        const fog = new THREE.FogExp2(0xff8c53, 0.0055);
         scene.fog = fog;
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-        // Lighting Architecture
-        const ambientLight = new THREE.AmbientLight(0xffa26b, 0.85);
+        // Lighting System
+        const ambientLight = new THREE.AmbientLight(0xffa26b, 0.88);
         scene.add(ambientLight);
 
-        const sunLight = new THREE.DirectionalLight(0xffb77d, 2.0);
-        sunLight.position.set(-80, 50, -50);
+        const sunLight = new THREE.DirectionalLight(0xffb77d, 2.4);
+        sunLight.position.set(-85, 55, -55);
         sunLight.castShadow = true;
-        sunLight.shadow.mapSize.width = 2048;
-        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.mapSize.width = 4096; // 4K shadow resolution
+        sunLight.shadow.mapSize.height = 4096;
         sunLight.shadow.camera.near = 0.5;
-        sunLight.shadow.camera.far = 250;
-        const d = 60;
-        sunLight.shadow.camera.left = -d;
-        sunLight.shadow.camera.right = d;
-        sunLight.shadow.camera.top = d;
-        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.camera.far = 280;
+        const shadowDistance = 65;
+        sunLight.shadow.camera.left = -shadowDistance;
+        sunLight.shadow.camera.right = shadowDistance;
+        sunLight.shadow.camera.top = shadowDistance;
+        sunLight.shadow.camera.bottom = -shadowDistance;
+        sunLight.shadow.bias = -0.0001;
         scene.add(sunLight);
 
         // ==========================================
@@ -385,7 +457,7 @@
         let doorOpen = false;
         let footstepTimer = 0;
 
-        // Shooting animation variables
+        // Shooting animation recoil tracking
         let recoilOffset = 0;
         let recoilRot = 0;
 
@@ -400,7 +472,7 @@
         const keys = {};
         let pitch = 0, yaw = 0;
 
-        // Weapon Rig Attached to Camera
+        // Weapon Rig attached to camera
         const weaponContainer = new THREE.Group();
         weaponContainer.position.set(0.35, -0.3, -0.5);
         camera.add(weaponContainer);
@@ -410,7 +482,7 @@
         const woodGunMat = new THREE.MeshStandardMaterial({ color: 0x4a2e18, roughness: 0.6 });
         const darkMetalMat = new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 0.2 });
 
-        // Rifle Model
+        // Weapon 1: Rifle
         const rifleMesh = new THREE.Group();
         const rStock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.5), woodGunMat);
         rStock.position.set(0, -0.05, 0.1);
@@ -421,7 +493,7 @@
         rBrl.position.set(0, 0.03, -0.75);
         rifleMesh.add(rStock, rRec, rBrl);
 
-        // Shotgun Model
+        // Weapon 2: Shotgun
         const shotgunMesh = new THREE.Group();
         const sStock = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.18, 0.45), woodGunMat);
         sStock.position.set(0, -0.04, 0.1);
@@ -433,7 +505,7 @@
         shotgunMesh.add(sStock, sRec, sBrl);
         shotgunMesh.visible = false;
 
-        // Sniper Model
+        // Weapon 3: Sniper
         const sniperMesh = new THREE.Group();
         const snStock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.6), woodGunMat);
         snStock.position.set(0, -0.05, 0.15);
@@ -451,11 +523,15 @@
         weaponContainer.add(rifleMesh, shotgunMesh, sniperMesh);
 
         // ==========================================
-        // 4. ENVIRONMENT & HIGH-DETAIL TREES BUILD
+        // 4. ENVIRONMENT GENERATION & TREES
         // ==========================================
         function buildEnvironment() {
-            const groundMat = new THREE.MeshStandardMaterial({ color: 0x1d2e1b, roughness: 0.9, metalness: 0.1 });
-            const ground = new THREE.Mesh(new THREE.PlaneGeometry(350, 350, 32, 32), groundMat);
+            const groundMat = new THREE.MeshStandardMaterial({ 
+                color: 0x1d2e1b, 
+                roughness: 0.9, 
+                metalness: 0.1 
+            });
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400, 64, 64), groundMat);
             ground.rotation.x = -Math.PI / 2;
             ground.receiveShadow = true;
             scene.add(ground);
@@ -463,23 +539,24 @@
             const trunkMat = new THREE.MeshStandardMaterial({ color: 0x2b1a0e, roughness: 0.8 });
             const leavesMat = new THREE.MeshStandardMaterial({ color: 0x1b3b1e, roughness: 0.6 });
 
-            for (let i = 0; i < 160; i++) {
-                const x = (Math.random() - 0.5) * 280;
-                const z = (Math.random() - 0.5) * 280;
+            // Generate surrounding detailed forest
+            for (let i = 0; i < 200; i++) {
+                const x = (Math.random() - 0.5) * 320;
+                const z = (Math.random() - 0.5) * 320;
                 if (Math.sqrt(x * x + z * z) < 22) continue;
 
                 const treeGroup = new THREE.Group();
-                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.55, 5.5, 8), trunkMat);
-                trunk.position.y = 2.75;
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.6, 6.0, 10), trunkMat);
+                trunk.position.y = 3.0;
                 trunk.castShadow = true;
                 trunk.receiveShadow = true;
                 treeGroup.add(trunk);
 
                 for (let tier = 0; tier < 3; tier++) {
-                    const radius = 3.2 - tier * 0.7;
-                    const height = 4.5 - tier * 0.5;
-                    const leafCone = new THREE.Mesh(new THREE.ConeGeometry(radius, height, 8), leavesMat);
-                    leafCone.position.y = 5.0 + tier * 2.2;
+                    const radius = 3.4 - tier * 0.75;
+                    const height = 4.8 - tier * 0.5;
+                    const leafCone = new THREE.Mesh(new THREE.ConeGeometry(radius, height, 10), leavesMat);
+                    leafCone.position.y = 5.2 + tier * 2.3;
                     leafCone.castShadow = true;
                     leafCone.receiveShadow = true;
                     treeGroup.add(leafCone);
@@ -488,22 +565,47 @@
                 treeGroup.position.set(x, 0, z);
                 scene.add(treeGroup);
             }
+
+            // Generate Decorative Rocks
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.9 });
+            for (let i = 0; i < 40; i++) {
+                const rx = (Math.random() - 0.5) * 260;
+                const rz = (Math.random() - 0.5) * 260;
+                if (Math.sqrt(rx * rx + rz * rz) < 18) continue;
+
+                const rockSize = 0.8 + Math.random() * 1.5;
+                const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(rockSize, 1), rockMat);
+                rock.position.set(rx, rockSize * 0.4, rz);
+                rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+                rock.castShadow = true;
+                rock.receiveShadow = true;
+                scene.add(rock);
+            }
         }
         buildEnvironment();
 
         // ==========================================
-        // 5. TOWER, BALCONY, BED & CABIN CONSTRUCTION
+        // 5. TOWER, SEE-THROUGH WINDOWS, BALCONY & BED
         // ==========================================
         const towerGroup = new THREE.Group();
         scene.add(towerGroup);
 
         const woodMat = new THREE.MeshStandardMaterial({ color: 0x4d301b, roughness: 0.7 });
         const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x2b1a0e, roughness: 0.8 });
-        const cozyGlass = new THREE.MeshStandardMaterial({ color: 0xffb85c, transparent: true, opacity: 0.45, roughness: 0.1 });
+        
+        // Transparent Glass for Windows
+        const transparentGlassMat = new THREE.MeshStandardMaterial({ 
+            color: 0xe6f7ff, 
+            transparent: true, 
+            opacity: 0.35, 
+            roughness: 0.1,
+            metalness: 0.1
+        });
+
         const bedMat = new THREE.MeshStandardMaterial({ color: 0x8b2626, roughness: 0.6 });
         const pillowMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
 
-        // Support Pillars
+        // Support Legs
         for (let x of [-3.5, 3.5]) {
             for (let z of [-3.5, 3.5]) {
                 const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, 10.5, 12), woodMat);
@@ -514,7 +616,7 @@
             }
         }
 
-        // Cross Braces
+        // Structural Support Braces
         const braceMat = new THREE.MeshStandardMaterial({ color: 0x3d2515, roughness: 0.8 });
         const brace1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 10), braceMat);
         brace1.position.set(-3.5, 5, 0);
@@ -524,14 +626,14 @@
         brace2.rotation.x = -Math.PI / 4;
         towerGroup.add(brace1, brace2);
 
-        // Extended Platform (Cabin Floor + Outer Balcony)
+        // Expanded Main Deck (Platform for Interior & Outer Balcony)
         const mainDeck = new THREE.Mesh(new THREE.BoxGeometry(11, 0.4, 11), woodMat);
         mainDeck.position.set(0, 10.2, 0);
         mainDeck.receiveShadow = true;
         mainDeck.castShadow = true;
         towerGroup.add(mainDeck);
 
-        // Outer Balcony Railings
+        // Wrap-Around Outer Balcony Safety Railings
         const railMat = new THREE.MeshStandardMaterial({ color: 0x2e1b0e });
         const rNorth = new THREE.Mesh(new THREE.BoxGeometry(11, 1.1, 0.15), railMat);
         rNorth.position.set(0, 10.85, -5.4);
@@ -540,7 +642,7 @@
         const rWest = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.1, 11), railMat);
         rWest.position.set(-5.4, 10.85, 0);
         
-        // South Railing with gap for stairwell entrance
+        // South Railing with entrance gap
         const rSouthL = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.1, 0.15), railMat);
         rSouthL.position.set(-3.3, 10.85, 5.4);
         const rSouthR = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.1, 0.15), railMat);
@@ -548,7 +650,16 @@
 
         towerGroup.add(rNorth, rEast, rWest, rSouthL, rSouthR);
 
-        // Cabin Inner Walls
+        // Balcony Support Posts
+        for (let px of [-5.3, 5.3]) {
+            for (let pz of [-5.3, 5.3]) {
+                const post = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.1, 0.15), railMat);
+                post.position.set(px, 10.85, pz);
+                towerGroup.add(post);
+            }
+        }
+
+        // Cabin Interior Walls
         const wallW = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.2, 5.2), woodMat);
         wallW.position.set(-2.6, 12, 0);
         const wallE = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.2, 5.2), woodMat);
@@ -556,14 +667,28 @@
         const wallN = new THREE.Mesh(new THREE.BoxGeometry(5.2, 3.2, 0.2), woodMat);
         wallN.position.set(0, 12, -2.6);
 
-        // Cabin Front Entrance Wall
+        // Cabin Entrance Wall
         const wallSLeft = new THREE.Mesh(new THREE.BoxGeometry(1.8, 3.2, 0.2), woodMat);
         wallSLeft.position.set(-1.7, 12, 2.6);
         const wallSRight = new THREE.Mesh(new THREE.BoxGeometry(1.8, 3.2, 0.2), woodMat);
         wallSRight.position.set(1.7, 12, 2.6);
         towerGroup.add(wallW, wallE, wallN, wallSLeft, wallSRight);
 
-        // Cozy Cabin Bed
+        // Transparent See-Through Windows
+        const winN = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), transparentGlassMat);
+        winN.position.set(0, 12.5, -2.55);
+        
+        const winW = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), transparentGlassMat);
+        winW.position.set(-2.55, 12.5, 0);
+        winW.rotation.y = Math.PI / 2;
+        
+        const winE = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), transparentGlassMat);
+        winE.position.set(2.55, 12.5, 0);
+        winE.rotation.y = -Math.PI / 2;
+
+        towerGroup.add(winN, winW, winE);
+
+        // Interior Cozy Bed
         const bedFrame = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 2.2), darkWoodMat);
         bedFrame.position.set(1.5, 10.6, -1.3);
         const mattress = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.3, 2.0), bedMat);
@@ -572,7 +697,7 @@
         pillow.position.set(1.5, 11.05, -2.0);
         towerGroup.add(bedFrame, mattress, pillow);
 
-        // Cabin Desk & Radio
+        // Cabin Furniture: Desk, Chair, and Radio
         const rug = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.02, 24), new THREE.MeshStandardMaterial({ color: 0x3d5a80 }));
         rug.position.set(0, 10.42, 0);
         towerGroup.add(rug);
@@ -586,7 +711,7 @@
         radioBox.position.set(-1.4, 11.35, -1.8);
         towerGroup.add(desk, chair, radioBox);
 
-        // Interactive Door Pivot
+        // Interactive Hinged Door
         const doorPivot = new THREE.Group();
         doorPivot.position.set(-0.8, 12, 2.6);
         const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.0, 0.15), darkWoodMat);
@@ -595,30 +720,20 @@
         doorPivot.add(doorMesh);
         towerGroup.add(doorPivot);
 
-        // Windows & Light
-        const winN = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), cozyGlass);
-        winN.position.set(0, 12.5, -2.5);
-        const winW = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), cozyGlass);
-        winW.position.set(-2.5, 12.5, 0);
-        winW.rotation.y = Math.PI / 2;
-        const winE = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), cozyGlass);
-        winE.position.set(2.5, 12.5, 0);
-        winE.rotation.y = -Math.PI / 2;
-        towerGroup.add(winN, winW, winE);
-
+        // Point Light Inside Cabin
         const cozyLight = new THREE.PointLight(0xffb85c, 3.5, 16);
         cozyLight.position.set(0, 13.0, 0);
         cozyLight.castShadow = true;
         towerGroup.add(cozyLight);
 
-        // Tower Roof
+        // Tower Roof Structure
         const towerRoof = new THREE.Mesh(new THREE.ConeGeometry(7.5, 2.2, 4), darkWoodMat);
         towerRoof.position.set(0, 14.7, 0);
         towerRoof.rotation.y = Math.PI / 4;
         towerRoof.castShadow = true;
         towerGroup.add(towerRoof);
 
-        // Visual Staircase Geometry
+        // Staircase to Tower
         const STAIR_COUNT = 26;
         const STAIR_START_Z = 13.8;
         const STAIR_END_Z = 5.2;
@@ -641,7 +756,7 @@
         // ==========================================
         const truck = new THREE.Group();
         const truckBodyMat = new THREE.MeshStandardMaterial({ color: 0xaa2e1e, roughness: 0.3, metalness: 0.2 });
-        const glassMat = new THREE.MeshStandardMaterial({ color: 0xaaddee, transparent: true, opacity: 0.6 });
+        const truckGlassMat = new THREE.MeshStandardMaterial({ color: 0xaaddee, transparent: true, opacity: 0.6 });
 
         const mainChassis = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5.0), truckBodyMat);
         mainChassis.position.y = 1.0;
@@ -651,7 +766,7 @@
         cabinUpper.position.set(0, 2.0, -0.2);
         cabinUpper.castShadow = true;
 
-        const windshield = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.8), glassMat);
+        const windshield = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.8), truckGlassMat);
         windshield.position.set(0, 2.0, 1.01);
         truck.add(mainChassis, cabinUpper, windshield);
 
@@ -669,7 +784,7 @@
         scene.add(truck);
 
         // ==========================================
-        // 7. ENEMY ZOMBIE SYSTEM
+        // 7. ENEMY HORDE MECHANICS
         // ==========================================
         const zombieMat = new THREE.MeshStandardMaterial({ color: 0x2e4732, roughness: 0.7 });
         const zombieCloth = new THREE.MeshStandardMaterial({ color: 0x1c2522, roughness: 0.9 });
@@ -780,12 +895,11 @@
             });
         }
 
-        // Weapon Shooting + Visual Recoil Kick
+        // Weapon firing with visual recoil kick back
         function shootWeapon() {
             canShoot = false;
             let cooldown = 150;
             
-            // Trigger Visual Recoil Kick
             recoilOffset = 0.18;
             recoilRot = 0.15;
 
@@ -821,7 +935,7 @@
         // 9. STAIRS & BALCONY FLOOR PHYSICS
         // ==========================================
         function calculateGroundHeight(px, pz) {
-            // Invisible Math Ramp for Stairs
+            // Invisible Ramp Collision for Stairs
             const stairXMin = -1.6;
             const stairXMax = 1.6;
             const stairZMax = 14.2; 
@@ -833,17 +947,17 @@
                 return player.height + rampHeight;
             }
 
-            // Expanded Main Deck Level (Outer Balcony Walkway)
+            // Expanded Main Deck & Outer Balcony Level
             if (Math.abs(px) <= 5.3 && Math.abs(pz) <= 5.3 && player.position.y > 8.0) {
                 return 10.2 + player.height;
             }
 
-            // Default Forest Floor Ground Level
+            // Ground Floor
             return player.height;
         }
 
         // ==========================================
-        // 10. MAIN ANIMATION & GAME LOOP
+        // 10. MAIN ANIMATION & RENDER LOOP
         // ==========================================
         const clock = new THREE.Clock();
 
@@ -852,18 +966,18 @@
             const delta = clock.getDelta();
             const time = clock.getElapsedTime();
 
-            // Smooth Day to Dark Night Transition
+            // Day to Night Cycle
             const dayFactor = Math.max(0, 1 - (time * 0.007));
             scene.background.copy(nightSky).lerp(morningSky, dayFactor);
             fog.color.copy(nightSky).lerp(morningSky, dayFactor);
-            ambientLight.intensity = 0.12 + (0.73 * dayFactor);
-            sunLight.intensity = 0.05 + (1.95 * dayFactor);
+            ambientLight.intensity = 0.12 + (0.76 * dayFactor);
+            sunLight.intensity = 0.05 + (2.35 * dayFactor);
 
-            // Door Smooth Hinged Animation
+            // Door Smooth Hinged Motion
             const targetDoorAngle = doorOpen ? -Math.PI / 2 : 0;
             doorPivot.rotation.y += (targetDoorAngle - doorPivot.rotation.y) * 0.1;
 
-            // Recoil Animation Recovery
+            // Recoil Recovery
             recoilOffset += (0 - recoilOffset) * 0.15;
             recoilRot += (0 - recoilRot) * 0.15;
             weaponContainer.position.z = -0.5 + recoilOffset;
@@ -889,7 +1003,7 @@
                     moveVector.applyEuler(new THREE.Euler(0, yaw, 0, 'YXZ'));
                     player.position.addScaledVector(moveVector, player.speed);
 
-                    // Ground & Balcony Collision Physics
+                    // Height & Gravity Physics
                     const groundTargetY = calculateGroundHeight(player.position.x, player.position.z);
 
                     player.position.y += player.verticalVelocity;
@@ -906,7 +1020,7 @@
                     camera.rotation.y = yaw;
                     camera.rotation.x = pitch;
 
-                    // UI Interactivity Ray Prompts
+                    // Interaction Distance Checking
                     const distTruck = player.position.distanceTo(truck.position);
                     const distDoor = player.position.distanceTo(new THREE.Vector3(0, 12, 2.6));
                     const prompt = document.getElementById('interaction-prompt');
@@ -922,7 +1036,7 @@
                     }
 
                 } else {
-                    // Vehicle Mechanics
+                    // Truck Vehicle Mechanics
                     if (keys['KeyW']) truck.translateZ(0.38);
                     if (keys['KeyS']) truck.translateZ(-0.22);
                     if (keys['KeyA']) truck.rotation.y += 0.032;
@@ -956,9 +1070,11 @@
         }
 
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(w, h);
         });
 
         animate();

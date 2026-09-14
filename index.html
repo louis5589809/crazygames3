@@ -285,7 +285,7 @@
             <p>You are stationed in an isolated forest firewatch tower.</p>
             <p><strong>Day Cycle:</strong> 10 Minutes | <strong>Night Cycle:</strong> 30 Seconds</p>
             <p><strong>Vehicle:</strong> Drive an 80 MPH Drifting Car with Tire Cloud FX! Press [F] to enter/exit.</p>
-            <p><strong>Tower:</strong> Climb multi-flight stairs, use bed [E] to skip nights, & eliminate emerging zombies!</p>
+            <p><strong>Tower:</strong> Walk down/up stairs with full gravity physics, use bed [E] to skip nights, & eliminate emerging zombies!</p>
             <p style="margin-top: 15px; font-size: 13px; color: #888;">WASD: Move/Drive | Shift: Drift | Mouse: Aim | Left-Click: Fire | F: Drive | E: Sleep</p>
             <div class="btn">ENTER GAME ENGINE</div>
         </div>
@@ -302,6 +302,7 @@
             TOWER_HEIGHT: 26.5,
             PLAYER_SPEED: 7.0,
             PLAYER_HEIGHT: 1.7,
+            GRAVITY: 25.0,
             FIRE_RATE: 180,
             BULLET_SPEED: 220,
             ZOMBIE_SPEED_GROUND: 3.5,
@@ -318,7 +319,8 @@
             isSleeping: false,
             lastShotTime: 0,
             isLocked: false,
-            inCar: false
+            inCar: false,
+            playerVy: 0
         };
 
         // Vehicle physics parameters
@@ -342,7 +344,8 @@
         let bullets = [];
         let particleEffects = [];
 
-        // Dynamic stair steps calculation for AI climbing physics
+        // Stair & Floor Collision Colliders
+        let colliders = [];
         let stairSteps = [];
 
         // Three.js Core Globals
@@ -621,6 +624,9 @@
             terrain.receiveShadow = true;
             scene.add(terrain);
 
+            // Ground floor collider plane
+            colliders.push(terrain);
+
             // Forest Generation
             const trunkGeo = new THREE.CylinderGeometry(0.3, 0.6, 7, 8);
             const foliageGeo = new THREE.ConeGeometry(3.5, 8, 8);
@@ -668,7 +674,6 @@
                 roughness: 0.1,
                 transmission: 0.8
             });
-            const metalMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.4 });
 
             // 1. Support Stilts
             const stiltGeo = new THREE.CylinderGeometry(0.5, 0.7, CONFIG.TOWER_HEIGHT, 8);
@@ -696,7 +701,7 @@
                 tower.add(b1, b2, b3, b4);
             });
 
-            // 3. Cabin Platform Deck
+            // 3. Cabin Platform Deck (Hole for top stair access)
             const deckGeo = new THREE.BoxGeometry(15, 0.6, 15);
             const deck = new THREE.Mesh(deckGeo, darkWoodMat);
             deck.position.set(0, CONFIG.TOWER_HEIGHT - 0.3, 0);
@@ -707,20 +712,17 @@
             const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(11, 0.1, 11), woodMat);
             cabinFloor.position.set(0, CONFIG.TOWER_HEIGHT + 0.05, 0);
             tower.add(cabinFloor);
+            colliders.push(cabinFloor);
 
             // 4. MULTI-FLIGHT STAIRCASE SYSTEM
             const flights = 4;
             const flightHeight = CONFIG.TOWER_HEIGHT / flights;
-            const stepGeo = new THREE.BoxGeometry(2.4, 0.15, 0.6);
-            const landingGeo = new THREE.BoxGeometry(3.0, 0.25, 3.0);
-            const railGeo = new THREE.CylinderGeometry(0.05, 0.05, flightHeight * 1.2);
-
-            let currentSide = 0; // 0: South, 1: East, 2: North, 3: West
+            const landingGeo = new THREE.BoxGeometry(3.2, 0.25, 3.2);
 
             for (let f = 0; f < flights; f++) {
                 const startY = f * flightHeight;
                 const endY = (f + 1) * flightHeight;
-                const stepsInFlight = 10;
+                const stepsInFlight = 16;
 
                 // Intermediate Stair Landing
                 const landing = new THREE.Mesh(landingGeo, darkWoodMat);
@@ -728,25 +730,39 @@
                 let landZ = (f < 2) ? 5.5 : -5.5;
                 landing.position.set(landX, endY, landZ);
                 tower.add(landing);
+                colliders.push(landing);
 
-                // Steps Creation
+                // Continuous Ramp Colliders for smooth stair movement
+                const rampLength = Math.hypot(8.0, flightHeight);
+                const rampAngle = Math.atan2(flightHeight, 8.0);
+                const rampGeo = new THREE.BoxGeometry(2.6, 0.2, rampLength);
+                const ramp = new THREE.Mesh(rampGeo, woodMat);
+
+                let startX = (f % 2 === 0) ? -4.0 : 4.0;
+                let endX = (f % 2 === 0) ? 4.0 : -4.0;
+                let sideZ = (f < 2) ? 5.5 : -5.5;
+
+                ramp.position.set((startX + endX) / 2, (startY + endY) / 2, sideZ);
+                ramp.rotation.y = (f % 2 === 0) ? Math.PI / 2 : -Math.PI / 2;
+                ramp.rotation.x = rampAngle * ((f % 2 === 0) ? 1 : -1);
+                tower.add(ramp);
+                colliders.push(ramp);
+
+                // Steps Visuals
+                const stepGeo = new THREE.BoxGeometry(2.4, 0.15, 0.7);
                 for (let s = 0; s < stepsInFlight; s++) {
                     const progress = s / stepsInFlight;
                     const stepY = startY + progress * flightHeight;
-                    
-                    // Interpolate step position along tower perimeter
                     let stepX = -4.0 + progress * 8.0;
                     if (f % 2 === 1) stepX = 4.0 - progress * 8.0;
-                    let stepZ = (f < 2) ? 5.5 : -5.5;
 
                     const step = new THREE.Mesh(stepGeo, woodMat);
-                    step.position.set(stepX, stepY, stepZ);
+                    step.position.set(stepX, stepY, sideZ);
                     step.castShadow = true;
                     step.receiveShadow = true;
                     tower.add(step);
 
-                    // Store step positions for zombie AI climbing pathing
-                    stairSteps.push(new THREE.Vector3(stepX, stepY, stepZ));
+                    stairSteps.push(new THREE.Vector3(stepX, stepY, sideZ));
                 }
             }
 
@@ -819,7 +835,7 @@
                 [1.1, 0.4, -1.4]   // Rear Right
             ];
 
-            wheelOffsets.forEach((pos, idx) => {
+            wheelOffsets.forEach((pos) => {
                 const wheel = new THREE.Mesh(wheelGeo, wheelMat);
                 wheel.position.set(pos[0], pos[1], pos[2]);
                 wheel.castShadow = true;
@@ -931,6 +947,54 @@
             document.addEventListener('mousedown', (e) => {
                 if (state.isLocked && e.button === 0 && !state.inCar) shootWeapon();
             });
+        }
+
+        // ============================================================================
+        // PLAYER GRAVITY & STAIR PHYSICS ENGINE
+        // ============================================================================
+        const raycaster = new THREE.Raycaster();
+        const rayDown = new THREE.Vector3(0, -1, 0);
+
+        function updatePlayerPhysics(delta) {
+            if (state.inCar) return;
+
+            // Apply Horizontal Movement
+            const moveZ = Number(controls.moveForward) - Number(controls.moveBackward);
+            const moveX = Number(controls.moveRight) - Number(controls.moveLeft);
+
+            if (moveZ !== 0 || moveX !== 0) {
+                const moveDir = new THREE.Vector3(moveX, 0, -moveZ).normalize();
+                moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), yawObject.rotation.y);
+                yawObject.position.addScaledVector(moveDir, CONFIG.PLAYER_SPEED * delta);
+            }
+
+            // Raycast downward from feet to calculate floor/stair elevation
+            raycaster.set(yawObject.position, rayDown);
+            const intersects = raycaster.intersectObjects(colliders, false);
+
+            let groundY = 0;
+            if (intersects.length > 0) {
+                groundY = intersects[0].point.y;
+            }
+
+            const targetEyeY = groundY + CONFIG.PLAYER_HEIGHT;
+
+            // Stair step-up and gravity physics
+            if (yawObject.position.y <= targetEyeY + 0.35 && state.playerVy <= 0) {
+                // Snap player camera smoothly to ground or stair tread level
+                yawObject.position.y += (targetEyeY - yawObject.position.y) * Math.min(1.0, 20.0 * delta);
+                state.playerVy = 0;
+            } else {
+                // Apply Real-time Downward Gravity Fall
+                state.playerVy -= CONFIG.GRAVITY * delta;
+                yawObject.position.y += state.playerVy * delta;
+
+                // Clamp floor landing
+                if (yawObject.position.y < targetEyeY) {
+                    yawObject.position.y = targetEyeY;
+                    state.playerVy = 0;
+                }
+            }
         }
 
         // ============================================================================
@@ -1164,20 +1228,11 @@
             const delta = Math.min((timestamp - lastTimestamp) / 1000, 0.1);
             lastTimestamp = timestamp;
 
-            // Update Vehicle Mechanics
+            // Update Vehicle Mechanics & Player Gravity
             updateVehiclePhysics(delta);
+            updatePlayerPhysics(delta);
 
             if (state.isLocked && !state.isSleeping && !state.inCar) {
-                // First Person On-Foot Movement
-                const moveZ = Number(controls.moveForward) - Number(controls.moveBackward);
-                const moveX = Number(controls.moveRight) - Number(controls.moveLeft);
-
-                if (moveZ !== 0 || moveX !== 0) {
-                    const moveDir = new THREE.Vector3(moveX, 0, -moveZ).normalize();
-                    moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), yawObject.rotation.y);
-                    yawObject.position.addScaledVector(moveDir, CONFIG.PLAYER_SPEED * delta);
-                }
-
                 // Gun Recoil Recovery
                 gunMesh.position.z += (-0.45 - gunMesh.position.z) * 15 * delta;
             }

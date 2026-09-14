@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firewatch Outpost 3D - 4K Castle & Balcony Edition</title>
+    <title>Firewatch Castle Outpost 4K - Simulator Edition</title>
+    <!-- Castle Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
     <style>
         * {
@@ -42,15 +43,10 @@
             border-radius: 8px 8px 0 0;
             font-size: 13px;
             font-weight: 500;
-            max-width: 260px;
+            max-width: 280px;
             box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
         }
         .tab-icon {
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-size: 14px;
         }
         .tab-title {
@@ -59,7 +55,7 @@
             text-overflow: ellipsis;
         }
 
-        /* VIEWPORT & HUD CONTAINER */
+        /* VIEWPORT CONTAINER */
         #viewport {
             position: relative;
             flex: 1;
@@ -72,7 +68,7 @@
             display: block;
         }
 
-        /* HUD & OVERLAY */
+        /* HUD & OVERLAYS */
         #hud {
             position: absolute;
             top: 0;
@@ -108,7 +104,7 @@
             margin-bottom: 6px;
         }
         .card .value {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 800;
         }
         #crosshair {
@@ -154,7 +150,7 @@
         #instructions {
             text-align: center;
             color: #fff;
-            max-width: 600px;
+            max-width: 620px;
             padding: 45px;
             background: rgba(16, 20, 36, 0.95);
             border-radius: 20px;
@@ -209,7 +205,7 @@
 </head>
 <body>
 
-    <!-- GOOGLE STYLE TAB BAR WITH CASTLE FAVICON -->
+    <!-- BROWSER TAB BAR -->
     <div id="google-tab-bar">
         <div class="tab">
             <span class="tab-icon">🏰</span>
@@ -217,18 +213,19 @@
         </div>
     </div>
 
+    <!-- MAIN VIEWPORT -->
     <div id="viewport">
         <canvas id="game-canvas"></canvas>
 
         <div id="hud">
             <div class="hud-top">
                 <div class="card">
-                    <h2>Outpost Environment</h2>
+                    <h2>Quality Mode</h2>
                     <div class="value" style="color: #ff9e59;">4K Ultra HD</div>
                 </div>
                 <div class="card" style="text-align: right;">
-                    <h2>Stance</h2>
-                    <div id="stance-val" class="value" style="color: #4b88ff;">Standing</div>
+                    <h2>Active Stance</h2>
+                    <div id="stance-val" class="value" style="color: #4b88ff;">Walking</div>
                 </div>
             </div>
             <div id="crosshair"></div>
@@ -237,12 +234,12 @@
 
         <div id="blocker">
             <div id="instructions">
-                <h1>OUTPOST SIMULATION - 4K CASTLE EDITION</h1>
-                <p>Explore the forest outpost, step onto the wrap-around balcony, gaze through transparent cabin windows, drive the vehicle, and toggle prone position.</p>
+                <h1>OUTPOST SIMULATION - 4K EDITION</h1>
+                <p>Explore the 3D forest environment, enter and exit the ranger vehicle, drift with particle smoke effects, and toggle prone position.</p>
                 <div class="controls-grid">
-                    <div><span>WASD</span> : Move Around</div>
-                    <div><span>Mouse</span> : Aim / Look Around</div>
-                    <div><span>E</span> : Open Door / Drive Truck</div>
+                    <div><span>WASD</span> : Walk / Drive Vehicle</div>
+                    <div><span>Mouse</span> : Look Around</div>
+                    <div><span>E</span> : Enter / Escape Vehicle</div>
                     <div><span>B</span> : Lay Down (Prone) / Stand</div>
                     <div><span>Space</span> : Jump</div>
                     <div><span>Left Click</span> : Trigger Flash Effect</div>
@@ -254,465 +251,597 @@
 
     <script>
         // ==========================================
-        // 1. THREE.JS 4K GRAPHICS SETUP
+        // 1. INPUT MANAGER CLASS
         // ==========================================
-        const container = document.getElementById('viewport');
-        const canvas = document.getElementById('game-canvas');
-        const scene = new THREE.Scene();
+        class InputManager {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.keys = {};
+                this.pitch = 0;
+                this.yaw = 0;
+                this.callbacks = {};
 
-        const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-        
-        const renderer = new THREE.WebGLRenderer({ 
-            canvas, 
-            antialias: true, 
-            powerPreference: "high-performance",
-            precision: "highp"
-        });
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.15;
-
-        // Atmosphere Setup
-        const morningSky = new THREE.Color(0xff844c);
-        const nightSky = new THREE.Color(0x020308);
-        scene.background = morningSky.clone();
-
-        const fog = new THREE.FogExp2(0xff8c53, 0.0055);
-        scene.fog = fog;
-
-        // Lighting System
-        const ambientLight = new THREE.AmbientLight(0xffa26b, 0.88);
-        scene.add(ambientLight);
-
-        const sunLight = new THREE.DirectionalLight(0xffb77d, 2.4);
-        sunLight.position.set(-85, 55, -55);
-        sunLight.castShadow = true;
-        sunLight.shadow.mapSize.width = 4096;
-        sunLight.shadow.mapSize.height = 4096;
-        sunLight.shadow.camera.near = 0.5;
-        sunLight.shadow.camera.far = 280;
-        const shadowDistance = 65;
-        sunLight.shadow.camera.left = -shadowDistance;
-        sunLight.shadow.camera.right = shadowDistance;
-        sunLight.shadow.camera.top = shadowDistance;
-        sunLight.shadow.camera.bottom = -shadowDistance;
-        sunLight.shadow.bias = -0.0001;
-        scene.add(sunLight);
-
-        // ==========================================
-        // 2. VISUAL FLASH LIGHT EFFECT SETUP
-        // ==========================================
-        const flashLight = new THREE.PointLight(0xffaa00, 0, 10);
-        flashLight.position.set(0.35, -0.2, -0.8);
-        camera.add(flashLight);
-
-        const flashMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0 });
-        const flashMesh = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), flashMat);
-        flashMesh.position.set(0.35, -0.2, -0.8);
-        camera.add(flashMesh);
-        scene.add(camera);
-
-        function triggerVisualFlash() {
-            flashLight.intensity = 8.0;
-            flashMat.opacity = 1.0;
-            flashMesh.scale.set(1, 1, 1);
-
-            const fadeInterval = setInterval(() => {
-                flashLight.intensity *= 0.5;
-                flashMat.opacity *= 0.5;
-                flashMesh.scale.multiplyScalar(0.8);
-
-                if (flashLight.intensity < 0.1) {
-                    flashLight.intensity = 0;
-                    flashMat.opacity = 0;
-                    clearInterval(fadeInterval);
-                }
-            }, 20);
-        }
-
-        // ==========================================
-        // 3. GAME STATE MANAGEMENT
-        // ==========================================
-        let isDriving = false;
-        let isProne = false;
-        let doorOpen = false;
-
-        const player = {
-            standingHeight: 1.8,
-            proneHeight: 0.5,
-            currentHeight: 1.8,
-            speed: 0.14,
-            position: new THREE.Vector3(0, 1.8, 16),
-            verticalVelocity: 0,
-            isJumping: false
-        };
-
-        const keys = {};
-        let pitch = 0, yaw = 0;
-
-        // ==========================================
-        // 4. ENVIRONMENT GENERATION
-        // ==========================================
-        function buildEnvironment() {
-            const groundMat = new THREE.MeshStandardMaterial({ 
-                color: 0x1d2e1b, 
-                roughness: 0.9, 
-                metalness: 0.1 
-            });
-            const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400, 64, 64), groundMat);
-            ground.rotation.x = -Math.PI / 2;
-            ground.receiveShadow = true;
-            scene.add(ground);
-
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x2b1a0e, roughness: 0.8 });
-            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x1b3b1e, roughness: 0.6 });
-
-            for (let i = 0; i < 200; i++) {
-                const x = (Math.random() - 0.5) * 320;
-                const z = (Math.random() - 0.5) * 320;
-                if (Math.sqrt(x * x + z * z) < 22) continue;
-
-                const treeGroup = new THREE.Group();
-                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.6, 6.0, 10), trunkMat);
-                trunk.position.y = 3.0;
-                trunk.castShadow = true;
-                trunk.receiveShadow = true;
-                treeGroup.add(trunk);
-
-                for (let tier = 0; tier < 3; tier++) {
-                    const radius = 3.4 - tier * 0.75;
-                    const height = 4.8 - tier * 0.5;
-                    const leafCone = new THREE.Mesh(new THREE.ConeGeometry(radius, height, 10), leavesMat);
-                    leafCone.position.y = 5.2 + tier * 2.3;
-                    leafCone.castShadow = true;
-                    leafCone.receiveShadow = true;
-                    treeGroup.add(leafCone);
-                }
-
-                treeGroup.position.set(x, 0, z);
-                scene.add(treeGroup);
+                this.initListeners();
             }
-        }
-        buildEnvironment();
 
-        // ==========================================
-        // 5. TOWER, SEE-THROUGH WINDOWS & BALCONY
-        // ==========================================
-        const towerGroup = new THREE.Group();
-        scene.add(towerGroup);
-
-        const woodMat = new THREE.MeshStandardMaterial({ color: 0x4d301b, roughness: 0.7 });
-        const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x2b1a0e, roughness: 0.8 });
-        
-        const transparentGlassMat = new THREE.MeshStandardMaterial({ 
-            color: 0xe6f7ff, 
-            transparent: true, 
-            opacity: 0.35, 
-            roughness: 0.1,
-            metalness: 0.1
-        });
-
-        const bedMat = new THREE.MeshStandardMaterial({ color: 0x8b2626, roughness: 0.6 });
-        const pillowMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
-
-        for (let x of [-3.5, 3.5]) {
-            for (let z of [-3.5, 3.5]) {
-                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, 10.5, 12), woodMat);
-                leg.position.set(x, 5.25, z);
-                leg.castShadow = true;
-                leg.receiveShadow = true;
-                towerGroup.add(leg);
-            }
-        }
-
-        const mainDeck = new THREE.Mesh(new THREE.BoxGeometry(11, 0.4, 11), woodMat);
-        mainDeck.position.set(0, 10.2, 0);
-        mainDeck.receiveShadow = true;
-        mainDeck.castShadow = true;
-        towerGroup.add(mainDeck);
-
-        const railMat = new THREE.MeshStandardMaterial({ color: 0x2e1b0e });
-        const rNorth = new THREE.Mesh(new THREE.BoxGeometry(11, 1.1, 0.15), railMat);
-        rNorth.position.set(0, 10.85, -5.4);
-        const rEast = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.1, 11), railMat);
-        rEast.position.set(5.4, 10.85, 0);
-        const rWest = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.1, 11), railMat);
-        rWest.position.set(-5.4, 10.85, 0);
-        
-        const rSouthL = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.1, 0.15), railMat);
-        rSouthL.position.set(-3.3, 10.85, 5.4);
-        const rSouthR = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.1, 0.15), railMat);
-        rSouthR.position.set(3.3, 10.85, 5.4);
-
-        towerGroup.add(rNorth, rEast, rWest, rSouthL, rSouthR);
-
-        const wallW = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.2, 5.2), woodMat);
-        wallW.position.set(-2.6, 12, 0);
-        const wallE = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.2, 5.2), woodMat);
-        wallE.position.set(2.6, 12, 0);
-        const wallN = new THREE.Mesh(new THREE.BoxGeometry(5.2, 3.2, 0.2), woodMat);
-        wallN.position.set(0, 12, -2.6);
-
-        const wallSLeft = new THREE.Mesh(new THREE.BoxGeometry(1.8, 3.2, 0.2), woodMat);
-        wallSLeft.position.set(-1.7, 12, 2.6);
-        const wallSRight = new THREE.Mesh(new THREE.BoxGeometry(1.8, 3.2, 0.2), woodMat);
-        wallSRight.position.set(1.7, 12, 2.6);
-        towerGroup.add(wallW, wallE, wallN, wallSLeft, wallSRight);
-
-        const winN = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), transparentGlassMat);
-        winN.position.set(0, 12.5, -2.55);
-        
-        const winW = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), transparentGlassMat);
-        winW.position.set(-2.55, 12.5, 0);
-        winW.rotation.y = Math.PI / 2;
-        
-        const winE = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), transparentGlassMat);
-        winE.position.set(2.55, 12.5, 0);
-        winE.rotation.y = -Math.PI / 2;
-
-        towerGroup.add(winN, winW, winE);
-
-        const bedFrame = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.4, 2.2), darkWoodMat);
-        bedFrame.position.set(1.5, 10.6, -1.3);
-        const mattress = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.3, 2.0), bedMat);
-        mattress.position.set(1.5, 10.85, -1.3);
-        const pillow = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.15, 0.5), pillowMat);
-        pillow.position.set(1.5, 11.05, -2.0);
-        towerGroup.add(bedFrame, mattress, pillow);
-
-        const doorPivot = new THREE.Group();
-        doorPivot.position.set(-0.8, 12, 2.6);
-        const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.0, 0.15), darkWoodMat);
-        doorMesh.position.set(0.8, 0, 0);
-        doorMesh.castShadow = true;
-        doorPivot.add(doorMesh);
-        towerGroup.add(doorPivot);
-
-        const cozyLight = new THREE.PointLight(0xffb85c, 3.5, 16);
-        cozyLight.position.set(0, 13.0, 0);
-        cozyLight.castShadow = true;
-        towerGroup.add(cozyLight);
-
-        const towerRoof = new THREE.Mesh(new THREE.ConeGeometry(7.5, 2.2, 4), darkWoodMat);
-        towerRoof.position.set(0, 14.7, 0);
-        towerRoof.rotation.y = Math.PI / 4;
-        towerRoof.castShadow = true;
-        towerGroup.add(towerRoof);
-
-        // Staircase to Tower
-        const STAIR_COUNT = 26;
-        const STAIR_START_Z = 13.8;
-        const STAIR_END_Z = 5.2;
-        const STAIR_HEIGHT = 10.2;
-
-        for (let i = 0; i < STAIR_COUNT; i++) {
-            const progress = i / (STAIR_COUNT - 1);
-            const stepY = progress * STAIR_HEIGHT;
-            const stepZ = STAIR_START_Z - (progress * (STAIR_START_Z - STAIR_END_Z));
-
-            const step = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.35, 0.65), woodMat);
-            step.position.set(0, stepY + 0.175, stepZ);
-            step.receiveShadow = true;
-            step.castShadow = true;
-            towerGroup.add(step);
-        }
-
-        // ==========================================
-        // 6. RANGER TRUCK MODEL BUILD
-        // ==========================================
-        const truck = new THREE.Group();
-        const truckBodyMat = new THREE.MeshStandardMaterial({ color: 0xaa2e1e, roughness: 0.3, metalness: 0.2 });
-        const truckGlassMat = new THREE.MeshStandardMaterial({ color: 0xaaddee, transparent: true, opacity: 0.6 });
-
-        const mainChassis = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5.0), truckBodyMat);
-        mainChassis.position.y = 1.0;
-        mainChassis.castShadow = true;
-
-        const cabinUpper = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.0, 2.4), truckBodyMat);
-        cabinUpper.position.set(0, 2.0, -0.2);
-        cabinUpper.castShadow = true;
-
-        const windshield = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.8), truckGlassMat);
-        windshield.position.set(0, 2.0, 1.01);
-        truck.add(mainChassis, cabinUpper, windshield);
-
-        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9 });
-        for (let wx of [-1.4, 1.4]) {
-            for (let wz of [-1.6, 1.6]) {
-                const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 0.42, 20), wheelMat);
-                wheel.rotation.z = Math.PI / 2;
-                wheel.position.set(wx, 0.58, wz);
-                wheel.castShadow = true;
-                truck.add(wheel);
-            }
-        }
-        truck.position.set(12, 0, 12);
-        scene.add(truck);
-
-        // ==========================================
-        // 7. CONTROLS & EVENT LISTENERS
-        // ==========================================
-        const blocker = document.getElementById('blocker');
-        document.getElementById('play-btn').addEventListener('click', () => {
-            canvas.requestPointerLock();
-        });
-
-        document.addEventListener('pointerlockchange', () => {
-            blocker.style.display = (document.pointerLockElement === canvas) ? 'none' : 'flex';
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (document.pointerLockElement !== canvas) return;
-            yaw -= e.movementX * 0.0022;
-            pitch -= e.movementY * 0.0022;
-            pitch = Math.max(-Math.PI / 2.05, Math.min(Math.PI / 2.05, pitch));
-        });
-
-        document.addEventListener('keydown', (e) => {
-            keys[e.code] = true;
-
-            if (e.code === 'KeyE') {
-                const distTruck = player.position.distanceTo(truck.position);
-                const distDoor = player.position.distanceTo(new THREE.Vector3(0, 12, 2.6));
-
-                if (distTruck < 4.5) {
-                    isDriving = !isDriving;
-                    if (!isDriving) {
-                        player.position.copy(truck.position).add(new THREE.Vector3(2.5, 0, 0));
+            initListeners() {
+                window.addEventListener('keydown', (e) => {
+                    this.keys[e.code] = true;
+                    if (this.callbacks[e.code]) {
+                        this.callbacks[e.code](e);
                     }
-                    document.getElementById('crosshair').style.display = isDriving ? 'none' : 'block';
-                } else if (distDoor < 3.0) {
-                    doorOpen = !doorOpen;
-                }
+                });
+
+                window.addEventListener('keyup', (e) => {
+                    this.keys[e.code] = false;
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (document.pointerLockElement !== this.canvas) return;
+                    this.yaw -= e.movementX * 0.0022;
+                    this.pitch -= e.movementY * 0.0022;
+                    this.pitch = Math.max(-Math.PI / 2.05, Math.min(Math.PI / 2.05, this.pitch));
+                });
             }
 
-            if (e.code === 'KeyB' && !isDriving) {
-                isProne = !isProne;
-                player.currentHeight = isProne ? player.proneHeight : player.standingHeight;
-                player.speed = isProne ? 0.05 : 0.14;
-                document.getElementById('stance-val').innerText = isProne ? 'Prone' : 'Standing';
-                document.getElementById('stance-val').style.color = isProne ? '#ff9e59' : '#4b88ff';
+            onKeyPress(code, callback) {
+                this.callbacks[code] = callback;
             }
 
-            if (e.code === 'Space' && !player.isJumping && !isDriving && !isProne) {
-                player.verticalVelocity = 0.17;
-                player.isJumping = true;
+            isPressed(code) {
+                return !!this.keys[code];
             }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            keys[e.code] = false;
-        });
-
-        document.addEventListener('mousedown', (e) => {
-            if (document.pointerLockElement === canvas && e.button === 0) {
-                triggerVisualFlash();
-            }
-        });
-
-        // ==========================================
-        // 8. STAIRS & BALCONY FLOOR PHYSICS
-        // ==========================================
-        function calculateGroundHeight(px, pz) {
-            const stairXMin = -1.6;
-            const stairXMax = 1.6;
-            const stairZMax = 14.2; 
-            const stairZMin = 5.0;  
-
-            if (px >= stairXMin && px <= stairXMax && pz <= stairZMax && pz >= stairZMin) {
-                const stairProgress = (stairZMax - pz) / (stairZMax - stairZMin);
-                const rampHeight = stairProgress * 10.2;
-                return player.currentHeight + rampHeight;
-            }
-
-            if (Math.abs(px) <= 5.3 && Math.abs(pz) <= 5.3 && player.position.y > 8.0) {
-                return 10.2 + player.currentHeight;
-            }
-
-            return player.currentHeight;
         }
 
         // ==========================================
-        // 9. MAIN ANIMATION & RENDER LOOP
+        // 2. PARTICLE SYSTEM CLASS (SMOKE & DRIFT)
         // ==========================================
-        const clock = new THREE.Clock();
+        class ParticleSystem {
+            constructor(scene, count = 100) {
+                this.scene = scene;
+                this.count = count;
+                this.particles = [];
+                this.currentIndex = 0;
 
-        function animate() {
-            requestAnimationFrame(animate);
-            const delta = clock.getDelta();
+                const geo = new THREE.SphereGeometry(0.18, 6, 6);
+                const mat = new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0 });
 
-            const targetDoorAngle = doorOpen ? -Math.PI / 2 : 0;
-            doorPivot.rotation.y += (targetDoorAngle - doorPivot.rotation.y) * 0.1;
+                for (let i = 0; i < this.count; i++) {
+                    const mesh = new THREE.Mesh(geo, mat.clone());
+                    mesh.visible = false;
+                    this.scene.add(mesh);
+                    this.particles.push({
+                        mesh,
+                        life: 0,
+                        maxLife: 1.0,
+                        velocity: new THREE.Vector3()
+                    });
+                }
+            }
 
-            if (document.pointerLockElement === canvas) {
-                if (!isDriving) {
-                    const moveVector = new THREE.Vector3();
-                    if (keys['KeyW']) moveVector.z -= 1;
-                    if (keys['KeyS']) moveVector.z += 1;
-                    if (keys['KeyA']) moveVector.x -= 1;
-                    if (keys['KeyD']) moveVector.x += 1;
-                    moveVector.normalize();
+            emit(position, scale = 1.0, isDrift = false) {
+                const p = this.particles[this.currentIndex];
+                p.mesh.position.copy(position);
+                p.mesh.scale.setScalar(scale);
+                p.mesh.visible = true;
+                p.mesh.material.opacity = isDrift ? 0.65 : 0.4;
+                p.mesh.material.color.setHex(isDrift ? 0xffffff : 0x777777);
+                p.life = 0;
+                p.maxLife = 0.5 + Math.random() * 0.4;
+                p.velocity.set(
+                    (Math.random() - 0.5) * 0.06,
+                    0.03 + Math.random() * 0.03,
+                    (Math.random() - 0.5) * 0.06
+                );
 
-                    moveVector.applyEuler(new THREE.Euler(0, yaw, 0, 'YXZ'));
-                    player.position.addScaledVector(moveVector, player.speed);
+                this.currentIndex = (this.currentIndex + 1) % this.count;
+            }
 
-                    const groundTargetY = calculateGroundHeight(player.position.x, player.position.z);
-
-                    player.position.y += player.verticalVelocity;
-                    player.verticalVelocity -= 0.009;
-
-                    if (player.position.y <= groundTargetY) {
-                        player.position.y = groundTargetY;
-                        player.verticalVelocity = 0;
-                        player.isJumping = false;
+            update(delta) {
+                this.particles.forEach(p => {
+                    if (!p.mesh.visible) return;
+                    p.life += delta;
+                    if (p.life >= p.maxLife) {
+                        p.mesh.visible = false;
+                    } else {
+                        p.mesh.position.add(p.velocity);
+                        p.mesh.scale.addScalar(delta * 0.9);
+                        p.mesh.material.opacity *= 0.94;
                     }
+                });
+            }
+        }
 
-                    camera.position.copy(player.position);
-                    camera.rotation.set(0, 0, 0);
-                    camera.rotation.y = yaw;
-                    camera.rotation.x = pitch;
+        // ==========================================
+        // 3. VEHICLE CONTROLLER CLASS
+        // ==========================================
+        class VehicleController {
+            constructor(scene) {
+                this.scene = scene;
+                this.mesh = new THREE.Group();
+                
+                this.speed = 0;
+                this.maxSpeed = 0.95;
+                this.acceleration = 0.025;
+                this.friction = 0.96;
+                this.turnSpeed = 0.038;
+                this.isDrifting = false;
 
-                    const distTruck = player.position.distanceTo(truck.position);
+                this.buildVehicle();
+            }
+
+            buildVehicle() {
+                const carBodyMat = new THREE.MeshStandardMaterial({ color: 0xcc2211, roughness: 0.2, metalness: 0.3 });
+                const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.5 });
+                const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+
+                const body = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5.0), carBodyMat);
+                body.position.y = 1.0;
+                body.castShadow = true;
+
+                const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.0, 2.4), carBodyMat);
+                cabin.position.set(0, 2.0, -0.2);
+                cabin.castShadow = true;
+
+                const windshield = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.8), glassMat);
+                windshield.position.set(0, 2.0, 1.01);
+
+                this.mesh.add(body, cabin, windshield);
+
+                for (let wx of [-1.4, 1.4]) {
+                    for (let wz of [-1.6, 1.6]) {
+                        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.4, 20), wheelMat);
+                        wheel.rotation.z = Math.PI / 2;
+                        wheel.position.set(wx, 0.55, wz);
+                        wheel.castShadow = true;
+                        this.mesh.add(wheel);
+                    }
+                }
+
+                this.mesh.position.set(10, 0, 10);
+                this.scene.add(this.mesh);
+            }
+
+            update(inputManager, particleSystem) {
+                if (inputManager.isPressed('KeyW')) {
+                    this.speed = Math.min(this.speed + this.acceleration, this.maxSpeed);
+                } else if (inputManager.isPressed('KeyS')) {
+                    this.speed = Math.max(this.speed - this.acceleration, -this.maxSpeed * 0.4);
+                } else {
+                    this.speed *= this.friction;
+                }
+
+                let turning = false;
+                if (Math.abs(this.speed) > 0.05) {
+                    const dir = this.speed > 0 ? 1 : -1;
+                    if (inputManager.isPressed('KeyA')) {
+                        this.mesh.rotation.y += this.turnSpeed * dir;
+                        turning = true;
+                    }
+                    if (inputManager.isPressed('KeyD')) {
+                        this.mesh.rotation.y -= this.turnSpeed * dir;
+                        turning = true;
+                    }
+                }
+
+                this.isDrifting = turning && Math.abs(this.speed) > 0.45;
+                this.mesh.translateZ(this.speed);
+
+                // Particle emissions
+                const exhaustPos = new THREE.Vector3(0, 0.4, -2.5).applyMatrix4(this.mesh.matrixWorld);
+                if (Math.abs(this.speed) > 0.05) {
+                    particleSystem.emit(exhaustPos, 0.8, false);
+                }
+
+                if (this.isDrifting) {
+                    const rearLeftWheel = new THREE.Vector3(-1.4, 0.2, -1.6).applyMatrix4(this.mesh.matrixWorld);
+                    const rearRightWheel = new THREE.Vector3(1.4, 0.2, -1.6).applyMatrix4(this.mesh.matrixWorld);
+                    particleSystem.emit(rearLeftWheel, 1.4, true);
+                    particleSystem.emit(rearRightWheel, 1.4, true);
+                }
+            }
+        }
+
+        // ==========================================
+        // 4. PLAYER CONTROLLER CLASS
+        // ==========================================
+        class PlayerController {
+            constructor(camera) {
+                this.camera = camera;
+                this.standingHeight = 1.8;
+                this.proneHeight = 0.5;
+                this.currentHeight = 1.8;
+                this.speed = 0.16;
+                this.position = new THREE.Vector3(0, 1.8, 16);
+                this.verticalVelocity = 0;
+                this.isJumping = false;
+                this.isProne = false;
+                this.isDriving = false;
+            }
+
+            toggleProne() {
+                if (this.isDriving) return;
+                this.isProne = !this.isProne;
+                this.currentHeight = this.isProne ? this.proneHeight : this.standingHeight;
+                this.speed = this.isProne ? 0.05 : 0.16;
+            }
+
+            jump() {
+                if (!this.isJumping && !this.isDriving && !this.isProne) {
+                    this.verticalVelocity = 0.18;
+                    this.isJumping = true;
+                }
+            }
+
+            calculateGroundHeight(px, pz) {
+                const stairXMin = -1.6;
+                const stairXMax = 1.6;
+                const stairZMax = 14.2;
+                const stairZMin = 5.0;
+
+                if (px >= stairXMin && px <= stairXMax && pz <= stairZMax && pz >= stairZMin) {
+                    const stairProgress = (stairZMax - pz) / (stairZMax - stairZMin);
+                    return this.currentHeight + (stairProgress * 10.2);
+                }
+
+                if (Math.abs(px) <= 5.3 && Math.abs(pz) <= 5.3 && this.position.y > 8.0) {
+                    return 10.2 + this.currentHeight;
+                }
+
+                return this.currentHeight;
+            }
+
+            update(inputManager) {
+                if (this.isDriving) return;
+
+                const moveVector = new THREE.Vector3();
+                if (inputManager.isPressed('KeyW')) moveVector.z -= 1;
+                if (inputManager.isPressed('KeyS')) moveVector.z += 1;
+                if (inputManager.isPressed('KeyA')) moveVector.x -= 1;
+                if (inputManager.isPressed('KeyD')) moveVector.x += 1;
+                moveVector.normalize();
+
+                moveVector.applyEuler(new THREE.Euler(0, inputManager.yaw, 0, 'YXZ'));
+                this.position.addScaledVector(moveVector, this.speed);
+
+                const groundTargetY = this.calculateGroundHeight(this.position.x, this.position.z);
+
+                this.position.y += this.verticalVelocity;
+                this.verticalVelocity -= 0.009;
+
+                if (this.position.y <= groundTargetY) {
+                    this.position.y = groundTargetY;
+                    this.verticalVelocity = 0;
+                    this.isJumping = false;
+                }
+
+                this.camera.position.copy(this.position);
+                this.camera.rotation.set(0, 0, 0);
+                this.camera.rotation.y = inputManager.yaw;
+                this.camera.rotation.x = inputManager.pitch;
+            }
+        }
+
+        // ==========================================
+        // 5. ENVIRONMENT BUILDER CLASS
+        // ==========================================
+        class EnvironmentBuilder {
+            constructor(scene) {
+                this.scene = scene;
+                this.buildGround();
+                this.buildForest();
+            }
+
+            buildGround() {
+                const groundMat = new THREE.MeshStandardMaterial({ color: 0x1d2e1b, roughness: 0.85 });
+                const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), groundMat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.receiveShadow = true;
+                this.scene.add(ground);
+            }
+
+            buildForest() {
+                const trunkMat = new THREE.MeshStandardMaterial({ color: 0x2b1a0e, roughness: 0.8 });
+                const leavesMat = new THREE.MeshStandardMaterial({ color: 0x1b3b1e, roughness: 0.6 });
+
+                for (let i = 0; i < 180; i++) {
+                    const x = (Math.random() - 0.5) * 320;
+                    const z = (Math.random() - 0.5) * 320;
+                    if (Math.sqrt(x * x + z * z) < 22) continue;
+
+                    const tree = new THREE.Group();
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 6), trunkMat);
+                    trunk.position.y = 3;
+                    trunk.castShadow = true;
+                    tree.add(trunk);
+
+                    for (let t = 0; t < 3; t++) {
+                        const leaf = new THREE.Mesh(new THREE.ConeGeometry(3 - t * 0.6, 4, 8), leavesMat);
+                        leaf.position.y = 5 + t * 2;
+                        leaf.castShadow = true;
+                        tree.add(leaf);
+                    }
+                    tree.position.set(x, 0, z);
+                    this.scene.add(tree);
+                }
+            }
+        }
+
+        // ==========================================
+        // 6. OUTPOST & TOWER BUILDER CLASS
+        // ==========================================
+        class OutpostBuilder {
+            constructor(scene) {
+                this.scene = scene;
+                this.doorOpen = false;
+                this.doorPivot = new THREE.Group();
+                this.buildTower();
+            }
+
+            buildTower() {
+                const towerGroup = new THREE.Group();
+                const woodMat = new THREE.MeshStandardMaterial({ color: 0x4d301b, roughness: 0.7 });
+                const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x2b1a0e, roughness: 0.8 });
+                const glassMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xe6f7ff, 
+                    transparent: true, 
+                    opacity: 0.35, 
+                    roughness: 0.1 
+                });
+
+                for (let x of [-3.5, 3.5]) {
+                    for (let z of [-3.5, 3.5]) {
+                        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, 10.5, 12), woodMat);
+                        leg.position.set(x, 5.25, z);
+                        leg.castShadow = true;
+                        towerGroup.add(leg);
+                    }
+                }
+
+                const deck = new THREE.Mesh(new THREE.BoxGeometry(11, 0.4, 11), woodMat);
+                deck.position.set(0, 10.2, 0);
+                deck.receiveShadow = true;
+                towerGroup.add(deck);
+
+                // Cabin Walls & See-Through Windows
+                const wallN = new THREE.Mesh(new THREE.BoxGeometry(5.2, 3.2, 0.2), woodMat);
+                wallN.position.set(0, 12, -2.6);
+                towerGroup.add(wallN);
+
+                const winN = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.4), glassMat);
+                winN.position.set(0, 12.5, -2.55);
+                towerGroup.add(winN);
+
+                // Door Pivot
+                this.doorPivot.position.set(-0.8, 12, 2.6);
+                const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.0, 0.15), darkWoodMat);
+                doorMesh.position.set(0.8, 0, 0);
+                this.doorPivot.add(doorMesh);
+                towerGroup.add(this.doorPivot);
+
+                // Staircase
+                for (let i = 0; i < 26; i++) {
+                    const progress = i / 25;
+                    const stepY = progress * 10.2;
+                    const stepZ = 13.8 - (progress * 8.6);
+                    const step = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.35, 0.65), woodMat);
+                    step.position.set(0, stepY + 0.175, stepZ);
+                    step.receiveShadow = true;
+                    towerGroup.add(step);
+                }
+
+                this.scene.add(towerGroup);
+            }
+
+            toggleDoor() {
+                this.doorOpen = !this.doorOpen;
+            }
+
+            update() {
+                const targetAngle = this.doorOpen ? -Math.PI / 2 : 0;
+                this.doorPivot.rotation.y += (targetAngle - this.doorPivot.rotation.y) * 0.1;
+            }
+        }
+
+        // ==========================================
+        // 7. HUD MANAGER CLASS
+        // ==========================================
+        class HUDManager {
+            constructor() {
+                this.stanceVal = document.getElementById('stance-val');
+                this.prompt = document.getElementById('interaction-prompt');
+                this.crosshair = document.getElementById('crosshair');
+            }
+
+            update(player, vehicle, outpost) {
+                if (player.isDriving) {
+                    this.stanceVal.innerText = 'Driving Vehicle';
+                    this.stanceVal.style.color = '#ff9e59';
+                    this.crosshair.style.display = 'none';
+                    this.prompt.innerText = "Press [E] to Escape Vehicle";
+                    this.prompt.style.display = 'block';
+                } else {
+                    this.stanceVal.innerText = player.isProne ? 'Prone' : 'Walking';
+                    this.stanceVal.style.color = player.isProne ? '#ff9e59' : '#4b88ff';
+                    this.crosshair.style.display = 'block';
+
+                    const distTruck = player.position.distanceTo(vehicle.mesh.position);
                     const distDoor = player.position.distanceTo(new THREE.Vector3(0, 12, 2.6));
-                    const prompt = document.getElementById('interaction-prompt');
 
                     if (distTruck < 4.5) {
-                        prompt.innerText = "Press [E] to Drive Vehicle";
-                        prompt.style.display = 'block';
+                        this.prompt.innerText = "Press [E] to Enter Vehicle";
+                        this.prompt.style.display = 'block';
                     } else if (distDoor < 3.0) {
-                        prompt.innerText = doorOpen ? "Press [E] to Close Cabin Door" : "Press [E] to Open Cabin Door";
-                        prompt.style.display = 'block';
+                        this.prompt.innerText = outpost.doorOpen ? "Press [E] to Close Door" : "Press [E] to Open Door";
+                        this.prompt.style.display = 'block';
                     } else {
-                        prompt.style.display = 'none';
+                        this.prompt.style.display = 'none';
                     }
-
-                } else {
-                    if (keys['KeyW']) truck.translateZ(0.38);
-                    if (keys['KeyS']) truck.translateZ(-0.22);
-                    if (keys['KeyA']) truck.rotation.y += 0.032;
-                    if (keys['KeyD']) truck.rotation.y -= 0.032;
-
-                    const camOffset = new THREE.Vector3(0, 5, -9.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), truck.rotation.y);
-                    camera.position.copy(truck.position).add(camOffset);
-                    camera.lookAt(truck.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
                 }
             }
-
-            renderer.render(scene, camera);
         }
 
-        window.addEventListener('resize', () => {
-            const w = container.clientWidth;
-            const h = container.clientHeight;
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-            renderer.setSize(w, h);
-        });
+        // ==========================================
+        // 8. APPLICATION & MAIN LOOP
+        // ==========================================
+        class Application {
+            constructor() {
+                this.container = document.getElementById('viewport');
+                this.canvas = document.getElementById('game-canvas');
 
-        animate();
+                this.initEngine();
+                this.initModules();
+                this.initListeners();
+                this.animate();
+            }
+
+            initEngine() {
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, this.container.clientWidth / this.container.clientHeight, 0.1, 1000);
+
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: this.canvas,
+                    antialias: true,
+                    powerPreference: "high-performance"
+                });
+                this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.2;
+
+                this.scene.background = new THREE.Color(0xff844c);
+                this.scene.fog = new THREE.FogExp2(0xff8c53, 0.005);
+
+                const ambient = new THREE.AmbientLight(0xffa26b, 0.9);
+                const sun = new THREE.DirectionalLight(0xffb77d, 2.5);
+                sun.position.set(-80, 60, -50);
+                sun.castShadow = true;
+                sun.shadow.mapSize.width = 4096;
+                sun.shadow.mapSize.height = 4096;
+                this.scene.add(ambient, sun);
+
+                // Visual Flash Light
+                this.flashLight = new THREE.PointLight(0xffaa00, 0, 12);
+                this.flashLight.position.set(0.35, -0.2, -0.8);
+                this.camera.add(this.flashLight);
+
+                this.flashMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0 });
+                this.flashMesh = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), this.flashMat);
+                this.flashMesh.position.set(0.35, -0.2, -0.8);
+                this.camera.add(this.flashMesh);
+                this.scene.add(this.camera);
+
+                this.clock = new THREE.Clock();
+            }
+
+            triggerVisualFlash() {
+                this.flashLight.intensity = 10.0;
+                this.flashMat.opacity = 1.0;
+                this.flashMesh.scale.set(1, 1, 1);
+
+                const fade = setInterval(() => {
+                    this.flashLight.intensity *= 0.5;
+                    this.flashMat.opacity *= 0.5;
+                    this.flashMesh.scale.multiplyScalar(0.8);
+
+                    if (this.flashLight.intensity < 0.1) {
+                        this.flashLight.intensity = 0;
+                        this.flashMat.opacity = 0;
+                        clearInterval(fade);
+                    }
+                }, 20);
+            }
+
+            initModules() {
+                this.input = new InputManager(this.canvas);
+                this.particles = new ParticleSystem(this.scene);
+                this.vehicle = new VehicleController(this.scene);
+                this.player = new PlayerController(this.camera);
+                this.environment = new EnvironmentBuilder(this.scene);
+                this.outpost = new OutpostBuilder(this.scene);
+                this.hud = new HUDManager();
+            }
+
+            initListeners() {
+                const blocker = document.getElementById('blocker');
+                document.getElementById('play-btn').addEventListener('click', () => {
+                    this.canvas.requestPointerLock();
+                });
+
+                document.addEventListener('pointerlockchange', () => {
+                    blocker.style.display = (document.pointerLockElement === this.canvas) ? 'none' : 'flex';
+                });
+
+                document.addEventListener('mousedown', (e) => {
+                    if (document.pointerLockElement === this.canvas && e.button === 0) {
+                        this.triggerVisualFlash();
+                    }
+                });
+
+                this.input.onKeyPress('KeyE', () => {
+                    const distTruck = this.player.position.distanceTo(this.vehicle.mesh.position);
+                    const distDoor = this.player.position.distanceTo(new THREE.Vector3(0, 12, 2.6));
+
+                    if (this.player.isDriving) {
+                        this.player.isDriving = false;
+                        const exitOffset = new THREE.Vector3(2.8, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.vehicle.mesh.rotation.y);
+                        this.player.position.copy(this.vehicle.mesh.position).add(exitOffset);
+                        this.player.position.y = this.player.currentHeight;
+                    } else if (distTruck < 4.5) {
+                        this.player.isDriving = true;
+                    } else if (distDoor < 3.0) {
+                        this.outpost.toggleDoor();
+                    }
+                });
+
+                this.input.onKeyPress('KeyB', () => {
+                    this.player.toggleProne();
+                });
+
+                this.input.onKeyPress('Space', () => {
+                    this.player.jump();
+                });
+
+                window.addEventListener('resize', () => {
+                    const w = this.container.clientWidth;
+                    const h = this.container.clientHeight;
+                    this.camera.aspect = w / h;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(w, h);
+                });
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                const delta = this.clock.getDelta();
+
+                if (document.pointerLockElement === this.canvas) {
+                    this.player.update(this.input);
+
+                    if (this.player.isDriving) {
+                        this.vehicle.update(this.input, this.particles);
+                        
+                        const targetCamPos = new THREE.Vector3(0, 4.5, -9.0).applyMatrix4(this.vehicle.mesh.matrixWorld);
+                        this.camera.position.lerp(targetCamPos, 0.1);
+                        this.camera.lookAt(this.vehicle.mesh.position.clone().add(new THREE.Vector3(0, 1.2, 0)));
+                    }
+
+                    this.outpost.update();
+                    this.particles.update(delta);
+                    this.hud.update(this.player, this.vehicle, this.outpost);
+                }
+
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        // Initialize Application
+        window.addEventListener('DOMContentLoaded', () => {
+            new Application();
+        });
     </script>
 </body>
 </html>

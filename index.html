@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Firewatch Tower: 3D Zombie Survival Engine</title>
+    <title>Firewatch Tower - Zombie Survival & Drifting Engine</title>
     <style>
         * {
             box-sizing: border-box;
@@ -104,6 +104,27 @@
             100% { text-shadow: 0 0 12px rgba(255,0,0,1); }
         }
 
+        #speedometer-panel {
+            display: none;
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(15, 20, 28, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 10px;
+            backdrop-filter: blur(8px);
+            color: #fff;
+            text-align: center;
+            z-index: 5;
+            pointer-events: none;
+        }
+        #speed-val {
+            font-size: 36px;
+            font-weight: 800;
+            color: #ffcc00;
+        }
+
         #health-bar-container {
             width: 100%;
             height: 10px;
@@ -125,7 +146,7 @@
             bottom: 22%;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.75);
+            background: rgba(0, 0, 0, 0.85);
             border: 1px solid #ffeb3b;
             color: #ffeb3b;
             padding: 10px 24px;
@@ -171,14 +192,14 @@
             box-shadow: 0 20px 50px rgba(0,0,0,0.6);
         }
         .start-card h1 {
-            font-size: 38px;
+            font-size: 34px;
             margin-bottom: 12px;
             color: #ff5533;
             letter-spacing: 2px;
             text-transform: uppercase;
         }
         .start-card p {
-            font-size: 15px;
+            font-size: 14px;
             margin: 8px 0;
             color: #ccc;
             line-height: 1.5;
@@ -249,127 +270,162 @@
         </div>
     </div>
 
+    <div id="speedometer-panel">
+        <div class="hud-title">SPEED</div>
+        <div id="speed-val">0 <span style="font-size: 16px;">MPH</span></div>
+    </div>
+
     <div id="interact-msg">Press [E] to Sleep (Skip Night)</div>
     <div id="damage-overlay"></div>
     <div id="sleep-overlay"></div>
 
     <div id="instructions">
         <div class="start-card">
-            <h1>FIREWATCH ZOMBIES</h1>
+            <h1>FIREWATCH DRIVER & DEFENSE</h1>
             <p>You are stationed in an isolated forest firewatch tower.</p>
-            <p><strong>Day Cycle:</strong> 10 Minutes of daylight to prepare.</p>
-            <p><strong>Night Cycle:</strong> 30 Seconds of darkness where infected climb your tower.</p>
-            <p><strong>Sleep System:</strong> Walk to your bed at night and press <strong>[E]</strong> to sleep through until morning!</p>
-            <p style="margin-top: 15px; font-size: 13px; color: #888;">WASD: Move | Mouse: Aim | Left-Click: Fire Weapon | E: Interact</p>
-            <div class="btn">CLICK TO ENTER TOWER</div>
+            <p><strong>Day Cycle:</strong> 10 Minutes | <strong>Night Cycle:</strong> 30 Seconds</p>
+            <p><strong>Vehicle:</strong> Drive an 80 MPH Drifting Car with Tire Cloud FX! Press [F] to enter/exit.</p>
+            <p><strong>Tower:</strong> Climb multi-flight stairs, use bed [E] to skip nights, & eliminate emerging zombies!</p>
+            <p style="margin-top: 15px; font-size: 13px; color: #888;">WASD: Move/Drive | Shift: Drift | Mouse: Aim | Left-Click: Fire | F: Drive | E: Sleep</p>
+            <div class="btn">ENTER GAME ENGINE</div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // ============================================================================
-        // GAME CONFIGURATION & CONSTANTS
+        // CONFIGURATION & GLOBAL STATE
         // ============================================================================
         const CONFIG = {
-            DAY_DURATION: 600,     // 10 Minutes in seconds
-            NIGHT_DURATION: 30,    // 30 Seconds in seconds
+            DAY_DURATION: 600,     // 10 minutes in seconds
+            NIGHT_DURATION: 30,    // 30 seconds in seconds
             TOWER_HEIGHT: 26.5,
             PLAYER_SPEED: 7.0,
             PLAYER_HEIGHT: 1.7,
-            FIRE_RATE: 180,        // ms between shots
-            BULLET_SPEED: 180,
+            FIRE_RATE: 180,
+            BULLET_SPEED: 220,
             ZOMBIE_SPEED_GROUND: 3.5,
-            ZOMBIE_SPEED_CLIMB: 4.2,
-            ZOMBIE_MAX_HEALTH: 3,
-            MAX_ZOMBIES: 25
+            ZOMBIE_SPEED_STAIRS: 3.8,
+            MAX_ZOMBIES: 30
         };
         CONFIG.TOTAL_CYCLE = CONFIG.DAY_DURATION + CONFIG.NIGHT_DURATION;
 
-        // ============================================================================
-        // GAME STATE
-        // ============================================================================
         let state = {
-            gameTime: 120, // Start daytime
+            gameTime: 120,
             score: 0,
             towerHealth: 100,
             isNight: false,
             isSleeping: false,
             lastShotTime: 0,
-            isLocked: false
+            isLocked: false,
+            inCar: false
+        };
+
+        // Vehicle physics parameters
+        let vehicle = {
+            mesh: null,
+            wheels: [],
+            headlights: [],
+            pos: new THREE.Vector3(12, 0.6, 12),
+            vel: new THREE.Vector3(),
+            speed: 0, // In MPH
+            maxSpeed: 80, // 80 MPH max speed
+            accel: 60,
+            brake: 80,
+            drag: 0.98,
+            heading: 0,
+            steerAngle: 0,
+            isDrifting: false
         };
 
         let zombies = [];
         let bullets = [];
         let particleEffects = [];
 
-        // ============================================================================
-        // THREE.JS CORE SETUP
-        // ============================================================================
+        // Dynamic stair steps calculation for AI climbing physics
+        let stairSteps = [];
+
+        // Three.js Core Globals
         let scene, camera, renderer;
         let yawObject, pitchObject;
         let sunLight, moonLight, ambientLight, cabinLight, flashlight;
         let skyMesh, bedMesh, gunMesh, muzzleFlashLight;
 
-        let controls = { moveForward: false, moveBackward: false, moveLeft: false, moveRight: false };
+        let controls = { 
+            moveForward: false, moveBackward: false, moveLeft: false, moveRight: false, 
+            drift: false 
+        };
 
         // ============================================================================
-        // PROCEDURAL AUDIO ENGINE (Web Audio API)
+        // SYNTHESIZED WEB AUDIO ENGINE
         // ============================================================================
         class SoundEngine {
             constructor() {
                 this.ctx = null;
+                this.engineGain = null;
+                this.engineOsc = null;
             }
 
             init() {
                 if (!this.ctx) {
                     const AudioContext = window.AudioContext || window.webkitAudioContext;
                     this.ctx = new AudioContext();
+                    this.setupEngineSound();
+                }
+            }
+
+            setupEngineSound() {
+                if (!this.ctx) return;
+                this.engineOsc = this.ctx.createOscillator();
+                this.engineGain = this.ctx.createGain();
+                this.engineOsc.type = 'sawtooth';
+                this.engineOsc.frequency.setValueAtTime(30, this.ctx.currentTime);
+                this.engineGain.gain.setValueAtTime(0, this.ctx.currentTime);
+                
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(400, this.ctx.currentTime);
+
+                this.engineOsc.connect(filter);
+                filter.connect(this.engineGain);
+                this.engineGain.connect(this.ctx.destination);
+                this.engineOsc.start();
+            }
+
+            updateEngineSound(speedRatio, isDriving) {
+                if (!this.ctx || !this.engineGain) return;
+                const now = this.ctx.currentTime;
+                if (isDriving) {
+                    this.engineGain.gain.setTargetAtTime(0.15, now, 0.1);
+                    this.engineOsc.frequency.setTargetAtTime(30 + speedRatio * 180, now, 0.05);
+                } else {
+                    this.engineGain.gain.setTargetAtTime(0, now, 0.1);
                 }
             }
 
             playGunshot() {
                 if (!this.ctx) return;
                 const now = this.ctx.currentTime;
-
-                // Gunshot Noise Buffer
-                const bufferSize = this.ctx.sampleRate * 0.3;
+                const bufferSize = this.ctx.sampleRate * 0.25;
                 const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                 const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = Math.random() * 2 - 1;
-                }
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
 
                 const noise = this.ctx.createBufferSource();
                 noise.buffer = buffer;
-
                 const filter = this.ctx.createBiquadFilter();
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(3000, now);
-                filter.frequency.exponentialRampToValueAtTime(100, now + 0.25);
+                filter.frequency.setValueAtTime(3500, now);
+                filter.frequency.exponentialRampToValueAtTime(100, now + 0.2);
 
                 const gain = this.ctx.createGain();
                 gain.gain.setValueAtTime(0.8, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
 
                 noise.connect(filter);
                 filter.connect(gain);
                 gain.connect(this.ctx.destination);
-
                 noise.start(now);
-
-                // Transient Snap
-                const osc = this.ctx.createOscillator();
-                const oscGain = this.ctx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(120, now);
-                osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
-                oscGain.gain.setValueAtTime(0.5, now);
-                oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-
-                osc.connect(oscGain);
-                oscGain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.1);
             }
 
             playHitSound() {
@@ -377,14 +433,11 @@
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.setValueAtTime(900, now);
                 osc.frequency.exponentialRampToValueAtTime(200, now + 0.08);
-
                 gain.gain.setValueAtTime(0.3, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
@@ -396,79 +449,93 @@
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(90 + Math.random() * 30, now);
-                osc.frequency.linearRampToValueAtTime(60 + Math.random() * 20, now + 0.6);
+                osc.frequency.setValueAtTime(80 + Math.random() * 40, now);
+                osc.frequency.linearRampToValueAtTime(50 + Math.random() * 20, now + 0.7);
 
                 const filter = this.ctx.createBiquadFilter();
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(400, now);
+                filter.frequency.setValueAtTime(350, now);
 
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.7);
 
                 osc.connect(filter);
                 filter.connect(gain);
                 gain.connect(this.ctx.destination);
-
                 osc.start(now);
-                osc.stop(now + 0.6);
+                osc.stop(now + 0.7);
             }
 
-            playSleepSnore() {
+            playSleepSound() {
                 if (!this.ctx) return;
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(150, now);
-                osc.frequency.linearRampToValueAtTime(180, now + 0.5);
-                osc.frequency.linearRampToValueAtTime(120, now + 1.0);
-
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.linearRampToValueAtTime(170, now + 0.6);
                 gain.gain.setValueAtTime(0.01, now);
-                gain.gain.linearRampToValueAtTime(0.1, now + 0.5);
-                gain.gain.linearRampToValueAtTime(0.01, now + 1.0);
-
+                gain.gain.linearRampToValueAtTime(0.12, now + 0.6);
+                gain.gain.linearRampToValueAtTime(0.01, now + 1.2);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start(now);
-                osc.stop(now + 1.0);
+                osc.stop(now + 1.2);
+            }
+
+            playScreech() {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const bufferSize = this.ctx.sampleRate * 0.1;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(2000, now);
+                filter.Q.setValueAtTime(8, now);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start(now);
             }
         }
 
         const audio = new SoundEngine();
 
         // ============================================================================
-        // INITIALIZATION & SCENE SETUP
+        // SCENE & SYSTEM SETUP
         // ============================================================================
         function init() {
             const container = document.getElementById('canvas-container');
 
-            // 1. Scene & Fog Setup
             scene = new THREE.Scene();
             scene.fog = new THREE.FogExp2(0xcce0ff, 0.003);
 
-            // 2. Camera Setup
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-            // First Person Hierarchy
             pitchObject = new THREE.Object3D();
             pitchObject.add(camera);
             yawObject = new THREE.Object3D();
-            yawObject.position.set(0, CONFIG.TOWER_HEIGHT, 0);
+            yawObject.position.set(0, CONFIG.TOWER_HEIGHT + CONFIG.PLAYER_HEIGHT, 0);
             yawObject.add(pitchObject);
             scene.add(yawObject);
 
-            // Flashlight setup
-            flashlight = new THREE.SpotLight(0xffffff, 0, 40, Math.PI / 6, 0.5, 1);
+            flashlight = new THREE.SpotLight(0xffffff, 0, 45, Math.PI / 5, 0.5, 1);
             flashlight.position.set(0, 0, 0);
             flashlight.target.position.set(0, 0, -1);
             camera.add(flashlight);
             camera.add(flashlight.target);
 
-            // 3. Renderer Setup
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -477,8 +544,7 @@
             renderer.outputEncoding = THREE.sRGBEncoding;
             container.appendChild(renderer.domElement);
 
-            // 4. Lighting Setup
-            ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
             scene.add(ambientLight);
 
             sunLight = new THREE.DirectionalLight(0xfffaed, 1.2);
@@ -503,17 +569,15 @@
             cabinLight.position.set(0, CONFIG.TOWER_HEIGHT + 3.5, 0);
             scene.add(cabinLight);
 
-            // 5. Environment & Model Construction
             createSky();
             createTerrain();
-            createFirewatchTower();
+            createFirewatchTowerWithStairs();
+            createCar();
             createWeapon();
 
-            // 6. Listeners & Controls
             setupControls();
             window.addEventListener('resize', onWindowResize);
 
-            // 7. Start Game Loop
             animate(0);
         }
 
@@ -528,7 +592,6 @@
         }
 
         function createTerrain() {
-            // Mountainous terrain base
             const terrainGeo = new THREE.PlaneGeometry(800, 800, 96, 96);
             terrainGeo.rotateX(-Math.PI / 2);
 
@@ -538,14 +601,12 @@
                 const z = pos.getZ(i);
                 const dist = Math.sqrt(x * x + z * z);
                 
-                if (dist > 18) {
-                    // Elevated noise hills
+                if (dist > 20) {
                     const h = Math.sin(x * 0.03) * Math.cos(z * 0.03) * 12 
                             + Math.sin(x * 0.01) * Math.sin(z * 0.01) * 25;
                     pos.setY(i, h);
                 } else {
-                    // Flattened clear-cut space for the tower
-                    pos.setY(i, 0);
+                    pos.setY(i, 0); // Flat area for tower & driving track
                 }
             }
             terrainGeo.computeVertexNormals();
@@ -560,20 +621,18 @@
             terrain.receiveShadow = true;
             scene.add(terrain);
 
-            // Dense Pine Forest Generation
+            // Forest Generation
             const trunkGeo = new THREE.CylinderGeometry(0.3, 0.6, 7, 8);
-            const foliageGeo1 = new THREE.ConeGeometry(3.5, 8, 8);
-            const foliageGeo2 = new THREE.ConeGeometry(2.8, 7, 8);
-            const foliageGeo3 = new THREE.ConeGeometry(2.0, 5, 8);
+            const foliageGeo = new THREE.ConeGeometry(3.5, 8, 8);
 
             const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2612, roughness: 0.9 });
             const foliageMat = new THREE.MeshStandardMaterial({ color: 0x1b3618, roughness: 0.8 });
 
-            const treeInstancedGroup = new THREE.Group();
+            const forestGroup = new THREE.Group();
 
-            for (let i = 0; i < 350; i++) {
+            for (let i = 0; i < 300; i++) {
                 const angle = Math.random() * Math.PI * 2;
-                const dist = 32 + Math.random() * 320;
+                const dist = 38 + Math.random() * 300;
                 const x = Math.cos(angle) * dist;
                 const z = Math.sin(angle) * dist;
 
@@ -582,33 +641,24 @@
                 trunk.position.y = 3.5;
                 trunk.castShadow = true;
 
-                const f1 = new THREE.Mesh(foliageGeo1, foliageMat);
+                const f1 = new THREE.Mesh(foliageGeo, foliageMat);
                 f1.position.y = 8;
                 f1.castShadow = true;
 
-                const f2 = new THREE.Mesh(foliageGeo2, foliageMat);
-                f2.position.y = 11;
-                f2.castShadow = true;
-
-                const f3 = new THREE.Mesh(foliageGeo3, foliageMat);
-                f3.position.y = 14;
-                f3.castShadow = true;
-
-                tree.add(trunk, f1, f2, f3);
+                tree.add(trunk, f1);
                 
                 const scale = 0.8 + Math.random() * 0.5;
                 tree.scale.set(scale, scale, scale);
                 tree.position.set(x, 0, z);
 
-                treeInstancedGroup.add(tree);
+                forestGroup.add(tree);
             }
-            scene.add(treeInstancedGroup);
+            scene.add(forestGroup);
         }
 
-        function createFirewatchTower() {
+        function createFirewatchTowerWithStairs() {
             const tower = new THREE.Group();
 
-            // Materials
             const woodMat = new THREE.MeshStandardMaterial({ color: 0x5a381e, roughness: 0.85 });
             const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x382211, roughness: 0.9 });
             const glassMat = new THREE.MeshPhysicalMaterial({
@@ -616,12 +666,11 @@
                 transparent: true,
                 opacity: 0.35,
                 roughness: 0.1,
-                transmission: 0.8,
-                ior: 1.5
+                transmission: 0.8
             });
             const metalMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.4 });
 
-            // 1. Four Main Structural Stilts
+            // 1. Support Stilts
             const stiltGeo = new THREE.CylinderGeometry(0.5, 0.7, CONFIG.TOWER_HEIGHT, 8);
             const stiltPositions = [
                 [-5.5, CONFIG.TOWER_HEIGHT / 2, -5.5],
@@ -637,10 +686,9 @@
                 tower.add(stilt);
             });
 
-            // 2. Horizontal & Cross Supports
+            // 2. Structural Cross Braces
             const horizontalGeo = new THREE.BoxGeometry(11, 0.4, 0.4);
-            const heights = [7, 14, 21];
-            heights.forEach(h => {
+            [7, 14, 21].forEach(h => {
                 const b1 = new THREE.Mesh(horizontalGeo, woodMat); b1.position.set(0, h, -5.5);
                 const b2 = new THREE.Mesh(horizontalGeo, woodMat); b2.position.set(0, h, 5.5);
                 const b3 = new THREE.Mesh(horizontalGeo, woodMat); b3.position.set(-5.5, h, 0); b3.rotation.y = Math.PI / 2;
@@ -648,74 +696,88 @@
                 tower.add(b1, b2, b3, b4);
             });
 
-            // 3. Cabin Deck / Floor Platform
+            // 3. Cabin Platform Deck
             const deckGeo = new THREE.BoxGeometry(15, 0.6, 15);
             const deck = new THREE.Mesh(deckGeo, darkWoodMat);
             deck.position.set(0, CONFIG.TOWER_HEIGHT - 0.3, 0);
             deck.receiveShadow = true;
             tower.add(deck);
 
-            // Inner Floor Boards
-            const cabinFloorGeo = new THREE.BoxGeometry(11, 0.1, 11);
-            const cabinFloor = new THREE.Mesh(cabinFloorGeo, woodMat);
+            // Inner Floor
+            const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(11, 0.1, 11), woodMat);
             cabinFloor.position.set(0, CONFIG.TOWER_HEIGHT + 0.05, 0);
             tower.add(cabinFloor);
 
-            // 4. Glass Windows and Cabin Walls
+            // 4. MULTI-FLIGHT STAIRCASE SYSTEM
+            const flights = 4;
+            const flightHeight = CONFIG.TOWER_HEIGHT / flights;
+            const stepGeo = new THREE.BoxGeometry(2.4, 0.15, 0.6);
+            const landingGeo = new THREE.BoxGeometry(3.0, 0.25, 3.0);
+            const railGeo = new THREE.CylinderGeometry(0.05, 0.05, flightHeight * 1.2);
+
+            let currentSide = 0; // 0: South, 1: East, 2: North, 3: West
+
+            for (let f = 0; f < flights; f++) {
+                const startY = f * flightHeight;
+                const endY = (f + 1) * flightHeight;
+                const stepsInFlight = 10;
+
+                // Intermediate Stair Landing
+                const landing = new THREE.Mesh(landingGeo, darkWoodMat);
+                let landX = (f % 2 === 0) ? 5.5 : -5.5;
+                let landZ = (f < 2) ? 5.5 : -5.5;
+                landing.position.set(landX, endY, landZ);
+                tower.add(landing);
+
+                // Steps Creation
+                for (let s = 0; s < stepsInFlight; s++) {
+                    const progress = s / stepsInFlight;
+                    const stepY = startY + progress * flightHeight;
+                    
+                    // Interpolate step position along tower perimeter
+                    let stepX = -4.0 + progress * 8.0;
+                    if (f % 2 === 1) stepX = 4.0 - progress * 8.0;
+                    let stepZ = (f < 2) ? 5.5 : -5.5;
+
+                    const step = new THREE.Mesh(stepGeo, woodMat);
+                    step.position.set(stepX, stepY, stepZ);
+                    step.castShadow = true;
+                    step.receiveShadow = true;
+                    tower.add(step);
+
+                    // Store step positions for zombie AI climbing pathing
+                    stairSteps.push(new THREE.Vector3(stepX, stepY, stepZ));
+                }
+            }
+
+            // 5. Glass Windows and Walls
             const wallH = 4.5;
             const size = 11;
-
             const windowPanelGeo = new THREE.BoxGeometry(size, wallH, 0.08);
+
             const w1 = new THREE.Mesh(windowPanelGeo, glassMat); w1.position.set(0, CONFIG.TOWER_HEIGHT + wallH / 2, -size / 2);
             const w2 = new THREE.Mesh(windowPanelGeo, glassMat); w2.position.set(0, CONFIG.TOWER_HEIGHT + wallH / 2, size / 2);
             const w3 = new THREE.Mesh(windowPanelGeo, glassMat); w3.position.set(-size / 2, CONFIG.TOWER_HEIGHT + wallH / 2, 0); w3.rotation.y = Math.PI / 2;
             const w4 = new THREE.Mesh(windowPanelGeo, glassMat); w4.position.set(size / 2, CONFIG.TOWER_HEIGHT + wallH / 2, 0); w4.rotation.y = Math.PI / 2;
             tower.add(w1, w2, w3, w4);
 
-            // 5. Roof Structure
-            const roofGeo = new THREE.ConeGeometry(10.5, 3.5, 4);
-            const roof = new THREE.Mesh(roofGeo, darkWoodMat);
+            // 6. Roof
+            const roof = new THREE.Mesh(new THREE.ConeGeometry(10.5, 3.5, 4), darkWoodMat);
             roof.position.set(0, CONFIG.TOWER_HEIGHT + wallH + 1.75, 0);
             roof.rotation.y = Math.PI / 4;
             roof.castShadow = true;
             tower.add(roof);
 
-            // 6. Perimeter Balcony Railing
-            const railBarGeo = new THREE.BoxGeometry(14.8, 0.15, 0.15);
-            const postGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 6);
-
-            const r1 = new THREE.Mesh(railBarGeo, metalMat); r1.position.set(0, CONFIG.TOWER_HEIGHT + 1.1, -7.3);
-            const r2 = new THREE.Mesh(railBarGeo, metalMat); r2.position.set(0, CONFIG.TOWER_HEIGHT + 1.1, 7.3);
-            const r3 = new THREE.Mesh(railBarGeo, metalMat); r3.position.set(-7.3, CONFIG.TOWER_HEIGHT + 1.1, 0); r3.rotation.y = Math.PI / 2;
-            const r4 = new THREE.Mesh(railBarGeo, metalMat); r4.position.set(7.3, CONFIG.TOWER_HEIGHT + 1.1, 0); r4.rotation.y = Math.PI / 2;
-            tower.add(r1, r2, r3, r4);
-
-            // Railing Posts
-            for (let x = -7; x <= 7; x += 3.5) {
-                const p1 = new THREE.Mesh(postGeo, metalMat); p1.position.set(x, CONFIG.TOWER_HEIGHT + 0.6, -7.3);
-                const p2 = new THREE.Mesh(postGeo, metalMat); p2.position.set(x, CONFIG.TOWER_HEIGHT + 0.6, 7.3);
-                tower.add(p1, p2);
-            }
-
-            // 7. Interior Furniture: Interactive Bed
+            // 7. Interior Bed
             const bedGroup = new THREE.Group();
-            
-            const frameGeo = new THREE.BoxGeometry(2.4, 0.5, 4.2);
-            const frame = new THREE.Mesh(frameGeo, darkWoodMat);
-            
-            const mattressGeo = new THREE.BoxGeometry(2.2, 0.4, 4.0);
-            const mattressMat = new THREE.MeshStandardMaterial({ color: 0xd8d8d8, roughness: 0.9 });
-            const mattress = new THREE.Mesh(mattressGeo, mattressMat);
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, 4.2), darkWoodMat);
+            const mattress = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.4, 4.0), new THREE.MeshStandardMaterial({ color: 0xd8d8d8 }));
             mattress.position.y = 0.35;
 
-            const blanketGeo = new THREE.BoxGeometry(2.22, 0.42, 2.8);
-            const blanketMat = new THREE.MeshStandardMaterial({ color: 0x8b2626, roughness: 0.8 });
-            const blanket = new THREE.Mesh(blanketGeo, blanketMat);
+            const blanket = new THREE.Mesh(new THREE.BoxGeometry(2.22, 0.42, 2.8), new THREE.MeshStandardMaterial({ color: 0x8b2626 }));
             blanket.position.set(0, 0.37, 0.5);
 
-            const pillowGeo = new THREE.BoxGeometry(1.8, 0.25, 0.9);
-            const pillowMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee });
-            const pillow = new THREE.Mesh(pillowGeo, pillowMat);
+            const pillow = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.25, 0.9), new THREE.MeshStandardMaterial({ color: 0xeeeeee }));
             pillow.position.set(0, 0.55, -1.4);
 
             bedGroup.add(frame, mattress, blanket, pillow);
@@ -723,26 +785,69 @@
             tower.add(bedGroup);
             bedMesh = bedGroup;
 
-            // 8. Interior Furniture: Desk, Chair, Radio
-            const deskGroup = new THREE.Group();
-            const deskTop = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.15, 2.0), darkWoodMat);
-            deskTop.position.y = 1.2;
-            
-            const legGeo = new THREE.BoxGeometry(0.15, 1.2, 0.15);
-            const l1 = new THREE.Mesh(legGeo, darkWoodMat); l1.position.set(-1.6, 0.6, -0.8);
-            const l2 = new THREE.Mesh(legGeo, darkWoodMat); l2.position.set(1.6, 0.6, -0.8);
-            const l3 = new THREE.Mesh(legGeo, darkWoodMat); l3.position.set(-1.6, 0.6, 0.8);
-            const l4 = new THREE.Mesh(legGeo, darkWoodMat); l4.position.set(1.6, 0.6, 0.8);
-
-            // Radio Equipment on Desk
-            const radio = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.5), metalMat);
-            radio.position.set(-0.8, 1.5, 0);
-
-            deskGroup.add(deskTop, l1, l2, l3, l4, radio);
-            deskGroup.position.set(3.6, CONFIG.TOWER_HEIGHT + 0.1, -3.2);
-            tower.add(deskGroup);
-
             scene.add(tower);
+        }
+
+        function createCar() {
+            const carGroup = new THREE.Group();
+
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, metalness: 0.6, roughness: 0.3 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0x111122, metalness: 0.9, roughness: 0.1 });
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+
+            // Car Chassis Body
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 4.5), bodyMat);
+            chassis.position.y = 0.6;
+            chassis.castShadow = true;
+
+            // Cabin Roof
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.7, 2.2), glassMat);
+            cabin.position.set(0, 1.25, -0.2);
+            cabin.castShadow = true;
+
+            carGroup.add(chassis, cabin);
+
+            // 4 Wheels
+            const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.35, 16);
+            wheelGeo.rotateZ(Math.PI / 2);
+
+            const wheelOffsets = [
+                [-1.1, 0.4, 1.4],  // Front Left
+                [1.1, 0.4, 1.4],   // Front Right
+                [-1.1, 0.4, -1.4], // Rear Left
+                [1.1, 0.4, -1.4]   // Rear Right
+            ];
+
+            wheelOffsets.forEach((pos, idx) => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.position.set(pos[0], pos[1], pos[2]);
+                wheel.castShadow = true;
+                carGroup.add(wheel);
+                vehicle.wheels.push(wheel);
+            });
+
+            // Headlights & Spotlights
+            const hlL = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.1), lightMat);
+            hlL.position.set(-0.7, 0.7, 2.26);
+            const hlR = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.1), lightMat);
+            hlR.position.set(0.7, 0.7, 2.26);
+            carGroup.add(hlL, hlR);
+
+            const spotL = new THREE.SpotLight(0xffffff, 0, 60, Math.PI / 4, 0.4);
+            spotL.position.set(-0.7, 0.7, 2.3);
+            spotL.target.position.set(-0.7, 0.7, 10);
+            
+            const spotR = new THREE.SpotLight(0xffffff, 0, 60, Math.PI / 4, 0.4);
+            spotR.position.set(0.7, 0.7, 2.3);
+            spotR.target.position.set(0.7, 0.7, 10);
+
+            carGroup.add(spotL, spotL.target, spotR, spotR.target);
+            vehicle.headlights.push(spotL, spotR);
+
+            carGroup.position.copy(vehicle.pos);
+            scene.add(carGroup);
+            vehicle.mesh = carGroup;
         }
 
         function createWeapon() {
@@ -751,30 +856,20 @@
             const metalMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.85, roughness: 0.2 });
             const woodMat = new THREE.MeshStandardMaterial({ color: 0x4a2c11, roughness: 0.7 });
 
-            // Barrel
             const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.1, 10), metalMat);
             barrel.rotation.x = Math.PI / 2;
             barrel.position.set(0, 0, -0.4);
 
-            // Body Receiver
             const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.16, 0.5), metalMat);
             receiver.position.set(0, -0.04, 0.1);
 
-            // Stock
             const stock = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.22, 0.6), woodMat);
             stock.position.set(0, -0.1, 0.6);
 
-            // Sight
-            const sight = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.06, 0.04), metalMat);
-            sight.position.set(0, 0.08, -0.8);
-
-            // Muzzle Flash Light
             muzzleFlashLight = new THREE.PointLight(0xffaa00, 0, 8);
             muzzleFlashLight.position.set(0, 0, -1.0);
 
-            gunGroup.add(barrel, receiver, stock, sight, muzzleFlashLight);
-            
-            // First person offset positioning
+            gunGroup.add(barrel, receiver, stock, muzzleFlashLight);
             gunGroup.position.set(0.28, -0.22, -0.45);
             pitchObject.add(gunGroup);
             gunMesh = gunGroup;
@@ -817,7 +912,9 @@
                     case 'KeyS': controls.moveBackward = true; break;
                     case 'KeyA': controls.moveLeft = true; break;
                     case 'KeyD': controls.moveRight = true; break;
+                    case 'ShiftLeft': controls.drift = true; break;
                     case 'KeyE': triggerSleepInteraction(); break;
+                    case 'KeyF': toggleCarEntry(); break;
                 }
             });
 
@@ -827,32 +924,132 @@
                     case 'KeyS': controls.moveBackward = false; break;
                     case 'KeyA': controls.moveLeft = false; break;
                     case 'KeyD': controls.moveRight = false; break;
+                    case 'ShiftLeft': controls.drift = false; break;
                 }
             });
 
             document.addEventListener('mousedown', (e) => {
-                if (state.isLocked && e.button === 0) shootWeapon();
+                if (state.isLocked && e.button === 0 && !state.inCar) shootWeapon();
             });
         }
 
         // ============================================================================
-        // COMBAT & GAMEPLAY MECHANICS
+        // VEHICLE DYNAMICS & DRIFT ENGINE
+        // ============================================================================
+        function toggleCarEntry() {
+            const playerPos = yawObject.position;
+            const distToCar = playerPos.distanceTo(vehicle.mesh.position);
+
+            if (!state.inCar) {
+                if (distToCar < 5.0) {
+                    state.inCar = true;
+                    gunMesh.visible = false;
+                    document.getElementById('speedometer-panel').style.display = 'block';
+                }
+            } else {
+                // Exit vehicle
+                state.inCar = false;
+                gunMesh.visible = true;
+                document.getElementById('speedometer-panel').style.display = 'none';
+                yawObject.position.copy(vehicle.mesh.position).add(new THREE.Vector3(2.5, CONFIG.PLAYER_HEIGHT, 0));
+            }
+        }
+
+        function updateVehiclePhysics(delta) {
+            if (state.inCar) {
+                // Throttle / Brakes
+                if (controls.moveForward) {
+                    vehicle.speed += vehicle.accel * delta;
+                } else if (controls.moveBackward) {
+                    vehicle.speed -= vehicle.brake * delta;
+                } else {
+                    vehicle.speed *= vehicle.drag;
+                }
+
+                // Speed Clamp (80 MPH Top Speed)
+                vehicle.speed = Math.max(-25, Math.min(vehicle.maxSpeed, vehicle.speed));
+
+                // Steering & Drifting Logic
+                const steerFactor = controls.drift ? 2.2 : 1.2;
+                if (controls.moveLeft) vehicle.heading += steerFactor * delta * (vehicle.speed / 40);
+                if (controls.moveRight) vehicle.heading -= steerFactor * delta * (vehicle.speed / 40);
+
+                vehicle.isDrifting = controls.drift && Math.abs(vehicle.speed) > 25 && (controls.moveLeft || controls.moveRight);
+
+                // Velocity Calculations with Lateral Drift Slip
+                const forwardDir = new THREE.Vector3(Math.sin(vehicle.heading), 0, Math.cos(vehicle.heading));
+                
+                if (vehicle.isDrifting) {
+                    audio.playScreech();
+                    createDriftCloud(vehicle.mesh.position);
+                    vehicle.speed *= 0.99; // Slight drift scrub loss
+                }
+
+                vehicle.mesh.rotation.y = vehicle.heading;
+                vehicle.mesh.position.addScaledVector(forwardDir, (vehicle.speed * 0.447) * delta); // MPH to m/s
+
+                // Animate Front Wheels Steering
+                const steerAngle = controls.moveLeft ? 0.4 : (controls.moveRight ? -0.4 : 0);
+                vehicle.wheels[0].rotation.y = steerAngle;
+                vehicle.wheels[1].rotation.y = steerAngle;
+
+                // Sync FPS Camera inside Driver's Seat
+                yawObject.position.copy(vehicle.mesh.position).add(new THREE.Vector3(0, 1.2, 0));
+
+                // Speedometer UI
+                document.getElementById('speed-val').innerText = `${Math.abs(Math.round(vehicle.speed))}`;
+            } else {
+                // Friction when empty
+                vehicle.speed *= 0.95;
+            }
+
+            audio.updateEngineSound(Math.abs(vehicle.speed) / vehicle.maxSpeed, state.inCar);
+        }
+
+        function createDriftCloud(pos) {
+            for (let i = 0; i < 3; i++) {
+                const cloudGeo = new THREE.SphereGeometry(0.4 + Math.random() * 0.4, 6, 6);
+                const cloudMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xdddddd, 
+                    transparent: true, 
+                    opacity: 0.6, 
+                    roughness: 1.0 
+                });
+                const cloud = new THREE.Mesh(cloudGeo, cloudMat);
+
+                cloud.position.copy(pos).add(new THREE.Vector3(
+                    (Math.random() - 0.5) * 1.8,
+                    0.2,
+                    (Math.random() - 0.5) * 1.8
+                ));
+
+                particleEffects.push({
+                    mesh: cloud,
+                    velocity: new THREE.Vector3(0, 1.2, 0),
+                    life: 0.8,
+                    maxLife: 0.8
+                });
+                scene.add(cloud);
+            }
+        }
+
+        // ============================================================================
+        // COMBAT & ZOMBIE EMERGENCE MECHANICS
         // ============================================================================
         function shootWeapon() {
             const now = performance.now();
             if (now - state.lastShotTime < CONFIG.FIRE_RATE || state.isSleeping) return;
             state.lastShotTime = now;
 
-            // Fire Audio & Visual Kick
             audio.playGunshot();
-            gunMesh.position.z = -0.35; // Recoil push back
+            gunMesh.position.z = -0.35;
             muzzleFlashLight.intensity = 3.0;
             setTimeout(() => { muzzleFlashLight.intensity = 0; }, 40);
 
-            // Bullet Spawn
-            const bulletGeo = new THREE.SphereGeometry(0.06, 8, 8);
-            const bulletMat = new THREE.MeshBasicMaterial({ color: 0xffdd66 });
-            const bullet = new THREE.Mesh(bulletGeo, bulletMat);
+            const bullet = new THREE.Mesh(
+                new THREE.SphereGeometry(0.06, 8, 8),
+                new THREE.MeshBasicMaterial({ color: 0xffdd66 })
+            );
 
             const origin = new THREE.Vector3();
             camera.getWorldPosition(origin);
@@ -861,36 +1058,12 @@
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
 
-            bullets.push({
-                mesh: bullet,
-                direction: dir,
-                life: 0
-            });
-
+            bullets.push({ mesh: bullet, direction: dir, life: 0 });
             scene.add(bullet);
         }
 
-        function createHitParticle(pos) {
-            for (let i = 0; i < 8; i++) {
-                const p = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.08, 0.08, 0.08),
-                    new THREE.MeshBasicMaterial({ color: 0xaa0000 })
-                );
-                p.position.copy(pos);
-                
-                const vel = new THREE.Vector3(
-                    (Math.random() - 0.5) * 5,
-                    (Math.random() - 0.5) * 5,
-                    (Math.random() - 0.5) * 5
-                );
-
-                particleEffects.push({ mesh: p, velocity: vel, life: 0.3 });
-                scene.add(p);
-            }
-        }
-
         function triggerSleepInteraction() {
-            if (!state.isNight || state.isSleeping) return;
+            if (!state.isNight || state.isSleeping || state.inCar) return;
 
             const playerPos = yawObject.position;
             const bedPos = new THREE.Vector3();
@@ -898,16 +1071,13 @@
 
             if (playerPos.distanceTo(bedPos) < 4.8) {
                 state.isSleeping = true;
-                audio.playSleepSnore();
+                audio.playSleepSound();
 
                 const sleepOverlay = document.getElementById('sleep-overlay');
                 sleepOverlay.style.opacity = '1';
 
                 setTimeout(() => {
-                    // Time skip to Day
                     state.gameTime = 0;
-                    
-                    // Clear night zombies
                     zombies.forEach(z => scene.remove(z.mesh));
                     zombies = [];
 
@@ -919,7 +1089,7 @@
             }
         }
 
-        function spawnZombie() {
+        function spawnZombieEmerging() {
             if (zombies.length >= CONFIG.MAX_ZOMBIES) return;
 
             const zombieGroup = new THREE.Group();
@@ -932,53 +1102,59 @@
             const head = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.55, 0.55), skinMat);
             head.position.y = 1.65;
 
-            // Glowing eyes
-            const e1 = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), eyeMat);
-            e1.position.set(-0.15, 1.7, -0.26);
-            const e2 = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), eyeMat);
-            e2.position.set(0.15, 1.7, -0.26);
+            const e1 = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), eyeMat); e1.position.set(-0.15, 1.7, -0.26);
+            const e2 = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), eyeMat); e2.position.set(0.15, 1.7, -0.26);
 
-            // Torso
             const torso = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.1, 0.4), clothesMat);
             torso.position.y = 0.85;
 
-            // Arms extended forward
             const armGeo = new THREE.BoxGeometry(0.2, 0.8, 0.2);
-            const arm1 = new THREE.Mesh(armGeo, skinMat);
-            arm1.position.set(-0.48, 1.1, -0.3);
-            arm1.rotation.x = -Math.PI / 2.5;
-
-            const arm2 = new THREE.Mesh(armGeo, skinMat);
-            arm2.position.set(0.48, 1.1, -0.3);
-            arm2.rotation.x = -Math.PI / 2.5;
+            const arm1 = new THREE.Mesh(armGeo, skinMat); arm1.position.set(-0.48, 1.1, -0.3); arm1.rotation.x = -Math.PI / 2.5;
+            const arm2 = new THREE.Mesh(armGeo, skinMat); arm2.position.set(0.48, 1.1, -0.3); arm2.rotation.x = -Math.PI / 2.5;
 
             zombieGroup.add(head, e1, e2, torso, arm1, arm2);
 
-            // Spawn radial distance
+            // Ground Spawn Emergence
             const angle = Math.random() * Math.PI * 2;
-            const dist = 50 + Math.random() * 40;
-            zombieGroup.position.set(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
+            const dist = 35 + Math.random() * 45;
+            const spawnX = Math.cos(angle) * dist;
+            const spawnZ = Math.sin(angle) * dist;
+
+            // Start submerged under soil
+            zombieGroup.position.set(spawnX, -2.0, spawnZ);
 
             scene.add(zombieGroup);
             zombies.push({
                 mesh: zombieGroup,
-                health: CONFIG.ZOMBIE_MAX_HEALTH,
-                isClimbing: false
+                health: 3,
+                emerged: false,
+                stairIndex: 0
             });
 
-            if (Math.random() < 0.3) audio.playZombieGroan();
+            // Dirt Eruption Cloud
+            createDirtEruption(new THREE.Vector3(spawnX, 0, spawnZ));
+            audio.playZombieGroan();
         }
 
-        function triggerDamageEffect() {
-            const overlay = document.getElementById('damage-overlay');
-            overlay.style.boxShadow = 'inset 0 0 100px rgba(255, 0, 0, 0.8)';
-            setTimeout(() => {
-                overlay.style.boxShadow = 'inset 0 0 100px rgba(255, 0, 0, 0)';
-            }, 150);
+        function createDirtEruption(pos) {
+            for (let i = 0; i < 12; i++) {
+                const dirt = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.2, 0.2, 0.2),
+                    new THREE.MeshStandardMaterial({ color: 0x3d2612 })
+                );
+                dirt.position.copy(pos);
+                const vel = new THREE.Vector3(
+                    (Math.random() - 0.5) * 4,
+                    3 + Math.random() * 3,
+                    (Math.random() - 0.5) * 4
+                );
+                particleEffects.push({ mesh: dirt, velocity: vel, life: 0.6, maxLife: 0.6 });
+                scene.add(dirt);
+            }
         }
 
         // ============================================================================
-        // MAIN GAME LOOP & UPDATES
+        // MAIN GAME ANIMATION LOOP
         // ============================================================================
         let lastTimestamp = 0;
 
@@ -988,40 +1164,36 @@
             const delta = Math.min((timestamp - lastTimestamp) / 1000, 0.1);
             lastTimestamp = timestamp;
 
-            if (state.isLocked && !state.isSleeping) {
-                // 1. First-Person Movement Dynamics
+            // Update Vehicle Mechanics
+            updateVehiclePhysics(delta);
+
+            if (state.isLocked && !state.isSleeping && !state.inCar) {
+                // First Person On-Foot Movement
                 const moveZ = Number(controls.moveForward) - Number(controls.moveBackward);
                 const moveX = Number(controls.moveRight) - Number(controls.moveLeft);
 
                 if (moveZ !== 0 || moveX !== 0) {
                     const moveDir = new THREE.Vector3(moveX, 0, -moveZ).normalize();
                     moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), yawObject.rotation.y);
-                    
                     yawObject.position.addScaledVector(moveDir, CONFIG.PLAYER_SPEED * delta);
                 }
 
-                // Keep Player Inside Tower Cabin Boundaries
-                yawObject.position.x = Math.max(-6.2, Math.min(6.2, yawObject.position.x));
-                yawObject.position.z = Math.max(-6.2, Math.min(6.2, yawObject.position.z));
-                yawObject.position.y = CONFIG.TOWER_HEIGHT + CONFIG.PLAYER_HEIGHT;
-
                 // Gun Recoil Recovery
-                gunMesh.position.z += ( -0.45 - gunMesh.position.z ) * 15 * delta;
+                gunMesh.position.z += (-0.45 - gunMesh.position.z) * 15 * delta;
             }
 
-            // 2. Day / Night Dynamic Progression
+            // Day / Night Cycle Progression
             state.gameTime = (state.gameTime + delta) % CONFIG.TOTAL_CYCLE;
             state.isNight = state.gameTime >= CONFIG.DAY_DURATION;
 
             const timeAngle = (state.gameTime / CONFIG.TOTAL_CYCLE) * Math.PI * 2;
             sunLight.position.x = Math.cos(timeAngle) * 250;
             sunLight.position.y = Math.sin(timeAngle) * 250;
-            sunLight.position.z = 120;
 
             const timeDisplay = document.getElementById('time-display');
 
             if (!state.isNight) {
-                // DAYTIME (10 Minutes)
+                // Day (10 minutes)
                 const remainingDay = Math.ceil(CONFIG.DAY_DURATION - state.gameTime);
                 const mins = Math.floor(remainingDay / 60);
                 const secs = (remainingDay % 60).toString().padStart(2, '0');
@@ -1034,11 +1206,12 @@
                 ambientLight.intensity = 0.55;
                 cabinLight.intensity = 0.2;
                 flashlight.intensity = 0;
+                vehicle.headlights.forEach(h => h.intensity = 0);
 
                 skyMesh.material.color.setHex(0x7ec0ee);
                 scene.fog.color.setHex(0xcce0ff);
             } else {
-                // NIGHTTIME (30 Seconds)
+                // Night (30 seconds)
                 const remainingNight = Math.ceil(CONFIG.TOTAL_CYCLE - state.gameTime);
                 
                 timeDisplay.innerText = `NIGHT (${remainingNight}s)`;
@@ -1049,42 +1222,40 @@
                 ambientLight.intensity = 0.05;
                 cabinLight.intensity = 1.0;
                 flashlight.intensity = 2.0;
+                vehicle.headlights.forEach(h => h.intensity = 2.5);
 
                 skyMesh.material.color.setHex(0x020307);
                 scene.fog.color.setHex(0x020307);
 
-                // Zombie Spawning Cycle
-                if (Math.random() < 0.06) {
-                    spawnZombie();
+                if (Math.random() < 0.08) {
+                    spawnZombieEmerging();
                 }
             }
 
-            // 3. Bed Sleep UI Interaction Check
+            // Interaction Display
             const playerPos = yawObject.position;
             const bedPos = new THREE.Vector3();
             bedMesh.getWorldPosition(bedPos);
             const interactMsg = document.getElementById('interact-msg');
 
-            if (state.isNight && playerPos.distanceTo(bedPos) < 4.8) {
+            if (state.isNight && playerPos.distanceTo(bedPos) < 4.8 && !state.inCar) {
                 interactMsg.style.display = 'block';
             } else {
                 interactMsg.style.display = 'none';
             }
 
-            // 4. Bullet Trajectory & Collision Check
+            // Bullet Updates & Hit Detection
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
                 b.mesh.position.addScaledVector(b.direction, CONFIG.BULLET_SPEED * delta);
                 b.life += delta;
 
-                let bulletHit = false;
-
+                let hit = false;
                 for (let j = zombies.length - 1; j >= 0; j--) {
                     const z = zombies[j];
                     if (b.mesh.position.distanceTo(z.mesh.position) < 1.4) {
                         z.health -= 1;
                         audio.playHitSound();
-                        createHitParticle(b.mesh.position);
 
                         if (z.health <= 0) {
                             scene.remove(z.mesh);
@@ -1092,70 +1263,85 @@
                             state.score += 1;
                             document.getElementById('score-display').innerText = `Kills: ${state.score}`;
                         }
-
-                        bulletHit = true;
+                        hit = true;
                         break;
                     }
                 }
 
-                if (bulletHit || b.life > 2.5) {
+                if (hit || b.life > 2.0) {
                     scene.remove(b.mesh);
                     bullets.splice(i, 1);
                 }
             }
 
-            // 5. Particle FX Simulation
+            // Particle Updates
             for (let i = particleEffects.length - 1; i >= 0; i--) {
                 const p = particleEffects[i];
                 p.mesh.position.addScaledVector(p.velocity, delta);
                 p.life -= delta;
+
+                if (p.mesh.material.opacity) {
+                    p.mesh.material.opacity = p.life / p.maxLife;
+                }
+
                 if (p.life <= 0) {
                     scene.remove(p.mesh);
                     particleEffects.splice(i, 1);
                 }
             }
 
-            // 6. Zombie AI & Climbing Movement
-            const towerBase = new THREE.Vector3(0, 0, 0);
-
+            // Zombie Emergence, Pathing, & Stair Climbing AI
             for (let i = zombies.length - 1; i >= 0; i--) {
                 const z = zombies[i];
                 const pos = z.mesh.position;
 
-                if (!z.isClimbing) {
-                    // Move across terrain toward tower stilts
-                    const moveVector = new THREE.Vector3().subVectors(towerBase, pos);
-                    moveVector.y = 0;
+                // 1. Emerge out of ground
+                if (!z.emerged) {
+                    pos.y += 3.0 * delta;
+                    if (pos.y >= 0) {
+                        pos.y = 0;
+                        z.emerged = true;
+                    }
+                    continue;
+                }
 
-                    if (moveVector.length() > 3.0) {
-                        moveVector.normalize();
-                        pos.addScaledVector(moveVector, CONFIG.ZOMBIE_SPEED_GROUND * delta);
-                        z.mesh.lookAt(towerBase.x, pos.y, towerBase.z);
+                // 2. Drive over zombies with 80 MPH car!
+                if (state.inCar && Math.abs(vehicle.speed) > 15) {
+                    if (pos.distanceTo(vehicle.mesh.position) < 2.2) {
+                        audio.playHitSound();
+                        scene.remove(z.mesh);
+                        zombies.splice(i, 1);
+                        state.score += 1;
+                        document.getElementById('score-display').innerText = `Kills: ${state.score}`;
+                        continue;
+                    }
+                }
+
+                // 3. Navigate towards & climb tower stairs
+                if (z.stairIndex < stairSteps.length) {
+                    const targetStep = stairSteps[z.stairIndex];
+                    const dir = new THREE.Vector3().subVectors(targetStep, pos);
+                    
+                    if (dir.length() < 0.6) {
+                        z.stairIndex++;
                     } else {
-                        z.isClimbing = true;
+                        dir.normalize();
+                        pos.addScaledVector(dir, CONFIG.ZOMBIE_SPEED_STAIRS * delta);
+                        z.mesh.lookAt(targetStep.x, pos.y, targetStep.z);
                     }
                 } else {
-                    // Climb stilts toward lookout deck
-                    pos.y += CONFIG.ZOMBIE_SPEED_CLIMB * delta;
+                    // Reached top cabin deck -> Attack tower
+                    state.towerHealth -= 6 * delta;
+                    document.getElementById('health-display').innerText = `${Math.max(0, Math.floor(state.towerHealth))}%`;
+                    document.getElementById('health-bar').style.width = `${Math.max(0, Math.floor(state.towerHealth))}%`;
 
-                    if (pos.y >= CONFIG.TOWER_HEIGHT) {
-                        // Attack tower structure
-                        state.towerHealth -= 8 * delta;
-                        triggerDamageEffect();
-
-                        const healthVal = Math.max(0, Math.floor(state.towerHealth));
-                        document.getElementById('health-display').innerText = `${healthVal}%`;
-                        document.getElementById('health-bar').style.width = `${healthVal}%`;
-
-                        if (state.towerHealth <= 0) {
-                            alert(`SURVIVAL OVER!\n\nZombies breached your Firewatch Tower.\nFinal Kills: ${state.score}`);
-                            location.reload();
-                        }
+                    if (state.towerHealth <= 0) {
+                        alert(`SURVIVAL OVER!\n\nZombies breached your Firewatch Tower stairs.\nFinal Kills: ${state.score}`);
+                        location.reload();
                     }
                 }
             }
 
-            // 7. Render Pass
             renderer.render(scene, camera);
         }
 

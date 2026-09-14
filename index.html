@@ -235,12 +235,12 @@
         <div id="blocker">
             <div id="instructions">
                 <h1>OUTPOST SIMULATION - 4K EDITION</h1>
-                <p>Explore the procedural 3D forest environment, step into the detailed outpost house, drive the animated truck with full vehicle mechanics, and utilize controls.</p>
+                <p>Explore the procedural 3D forest environment, walk up the house stairs, lay down flat on the floor, and drive the animated truck with vehicle mechanics.</p>
                 <div class="controls-grid">
                     <div><span>WASD</span> : Walk / Drive Vehicle</div>
                     <div><span>Mouse</span> : Look Around</div>
                     <div><span>E</span> : Enter / Exit Vehicle & Door</div>
-                    <div><span>B</span> : Lay Down (Prone) / Stand</div>
+                    <div><span>B</span> : Lay Down Flat (Prone) / Stand</div>
                     <div><span>Space</span> : Jump</div>
                     <div><span>Shift + Esc</span> : Exit Game / Pause</div>
                 </div>
@@ -378,6 +378,24 @@
                 texture.wrapT = THREE.RepeatWrapping;
                 return texture;
             }
+
+            static createCarPaintTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+
+                ctx.fillStyle = '#b82619';
+                ctx.fillRect(0, 0, 256, 256);
+
+                for (let i = 0; i < 1500; i++) {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.05})`;
+                    ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+                }
+
+                const texture = new THREE.CanvasTexture(canvas);
+                return texture;
+            }
         }
 
         // ==========================================
@@ -433,7 +451,7 @@
         // 3. PARTICLE SYSTEM CLASS
         // ==========================================
         class ParticleSystem {
-            constructor(scene, count = 120) {
+            constructor(scene, count = 160) {
                 this.scene = scene;
                 this.count = count;
                 this.particles = [];
@@ -498,50 +516,98 @@
                 this.mesh = new THREE.Group();
                 this.wheels = [];
                 this.steeringWheel = null;
+                this.speedometerNeedle = null;
+                this.headlights = [];
                 
                 this.speed = 0;
-                this.maxSpeed = 0.95;
-                this.acceleration = 0.025;
+                this.maxSpeed = 1.05;
+                this.acceleration = 0.028;
                 this.friction = 0.96;
-                this.turnSpeed = 0.038;
+                this.turnSpeed = 0.04;
                 this.isDrifting = false;
 
                 this.steeringAngle = 0;
                 this.suspensionPitch = 0;
                 this.suspensionRoll = 0;
+                this.engineVibration = 0;
 
                 this.buildVehicle();
             }
 
             buildVehicle() {
-                const carBodyMat = new THREE.MeshStandardMaterial({ color: 0xcc2211, roughness: 0.2, metalness: 0.3 });
+                const carBodyMat = new THREE.MeshStandardMaterial({ 
+                    map: this.textures.carPaint, 
+                    roughness: 0.2, 
+                    metalness: 0.4 
+                });
                 const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.5 });
                 const wheelMat = new THREE.MeshStandardMaterial({ map: this.textures.tire, roughness: 0.8 });
                 const interiorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+                const chromeMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.9, roughness: 0.1 });
+                const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
 
                 // Chassis Base Body
                 this.bodyGroup = new THREE.Group();
 
-                const body = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5.0), carBodyMat);
+                const body = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 5.2), carBodyMat);
                 body.position.y = 1.0;
                 body.castShadow = true;
 
-                const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.0, 2.4), carBodyMat);
+                const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.0, 2.5), carBodyMat);
                 cabin.position.set(0, 2.0, -0.2);
                 cabin.castShadow = true;
 
                 const windshield = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.8), glassMat);
-                windshield.position.set(0, 2.0, 1.01);
+                windshield.position.set(0, 2.0, 1.06);
 
-                // Interior Steering Wheel
+                // Front Grille & Bumpers
+                const bumperFront = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.3, 0.3), chromeMat);
+                bumperFront.position.set(0, 0.6, 2.65);
+                const bumperRear = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.3, 0.3), chromeMat);
+                bumperRear.position.set(0, 0.6, -2.65);
+                this.bodyGroup.add(bumperFront, bumperRear);
+
+                // Headlights
+                const headlightLeft = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), lightMat);
+                headlightLeft.position.set(-0.9, 1.1, 2.61);
+                const headlightRight = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), lightMat);
+                headlightRight.position.set(0.9, 1.1, 2.61);
+                this.bodyGroup.add(headlightLeft, headlightRight);
+
+                const spotLeft = new THREE.SpotLight(0xffffaa, 3, 40, Math.PI / 5, 0.5);
+                spotLeft.position.set(-0.9, 1.1, 2.65);
+                spotLeft.target.position.set(-0.9, 0, 20);
+                this.bodyGroup.add(spotLeft, spotLeft.target);
+
+                const spotRight = new THREE.SpotLight(0xffffaa, 3, 40, Math.PI / 5, 0.5);
+                spotRight.position.set(0.9, 1.1, 2.65);
+                spotRight.target.position.set(0.9, 0, 20);
+                this.bodyGroup.add(spotRight, spotRight.target);
+
+                // Dashboard & Interior Steering Wheel
+                const dashboard = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.4, 0.5), interiorMat);
+                dashboard.position.set(0, 1.6, 0.6);
+                this.bodyGroup.add(dashboard);
+
                 const steeringGroup = new THREE.Group();
                 const wheelRing = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.03, 8, 16), interiorMat);
-                steeringGroup.add(wheelRing);
-                steeringGroup.position.set(-0.5, 1.8, 0.3);
+                const wheelSpoke = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.03, 0.03), interiorMat);
+                steeringGroup.add(wheelRing, wheelSpoke);
+                steeringGroup.position.set(-0.5, 1.75, 0.45);
                 steeringGroup.rotation.x = Math.PI / 4;
                 this.steeringWheel = steeringGroup;
+                this.bodyGroup.add(this.steeringWheel);
 
-                this.bodyGroup.add(body, cabin, windshield, this.steeringWheel);
+                // Animated Speedometer Needle
+                const needleGroup = new THREE.Group();
+                const needleMesh = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.12, 0.01), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+                needleMesh.position.y = 0.06;
+                needleGroup.add(needleMesh);
+                needleGroup.position.set(-0.5, 1.82, 0.56);
+                this.speedometerNeedle = needleGroup;
+                this.bodyGroup.add(this.speedometerNeedle);
+
+                this.bodyGroup.add(body, cabin, windshield);
                 this.mesh.add(this.bodyGroup);
 
                 // Animated Wheels with Suspension Pivots
@@ -560,6 +626,10 @@
                     wheelMesh.rotation.z = Math.PI / 2;
                     wheelMesh.castShadow = true;
 
+                    // Rim detail line
+                    const rim = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.8, 0.08), chromeMat);
+                    wheelMesh.add(rim);
+
                     pivot.add(wheelMesh);
                     this.mesh.add(pivot);
 
@@ -570,12 +640,12 @@
                     });
                 });
 
-                this.mesh.position.set(12, 0, 12);
+                this.mesh.position.set(12, 0, 14);
                 this.scene.add(this.mesh);
             }
 
             update(inputManager, particleSystem) {
-                // Acceleration & Friction
+                // Acceleration & Friction Mechanics
                 if (inputManager.isPressed('KeyW')) {
                     this.speed = Math.min(this.speed + this.acceleration, this.maxSpeed);
                 } else if (inputManager.isPressed('KeyS')) {
@@ -586,10 +656,10 @@
 
                 // Steering Calculations & Front Wheel Rotations
                 let turning = false;
-                const targetSteer = inputManager.isPressed('KeyA') ? 0.45 : (inputManager.isPressed('KeyD') ? -0.45 : 0);
+                const targetSteer = inputManager.isPressed('KeyA') ? 0.48 : (inputManager.isPressed('KeyD') ? -0.48 : 0);
                 this.steeringAngle += (targetSteer - this.steeringAngle) * 0.15;
 
-                if (Math.abs(this.speed) > 0.05) {
+                if (Math.abs(this.speed) > 0.04) {
                     const dir = this.speed > 0 ? 1 : -1;
                     if (inputManager.isPressed('KeyA')) {
                         this.mesh.rotation.y += this.turnSpeed * dir;
@@ -601,11 +671,11 @@
                     }
                 }
 
-                this.isDrifting = turning && Math.abs(this.speed) > 0.45;
+                this.isDrifting = turning && Math.abs(this.speed) > 0.5;
                 this.mesh.translateZ(this.speed);
 
-                // CAR ANIMATIONS
-                // 1. Wheel Rotation (Forward/Backward Rolling)
+                // CAR ANIMATIONS & DETAILS:
+                // 1. Wheel Rotation (Forward/Backward Rolling) & Steering Angle
                 const wheelRollDelta = this.speed / 0.55;
                 this.wheels.forEach(w => {
                     w.mesh.rotation.x += wheelRollDelta;
@@ -614,23 +684,30 @@
                     }
                 });
 
-                // 2. Interior Steering Wheel Spin Animation
+                // 2. Dashboard Interior Steering Wheel & Speedometer Needle Animations
                 if (this.steeringWheel) {
                     this.steeringWheel.rotation.z = -this.steeringAngle * 2.5;
                 }
+                if (this.speedometerNeedle) {
+                    const speedRatio = Math.abs(this.speed) / this.maxSpeed;
+                    this.speedometerNeedle.rotation.z = -speedRatio * Math.PI * 0.75;
+                }
 
-                // 3. Body Suspension Pitch & Roll Animation
+                // 3. Engine Vibration & Body Suspension Pitch/Roll Animation
+                this.engineVibration = Math.sin(Date.now() * 0.03) * 0.008 * (1.0 + Math.abs(this.speed));
                 const targetPitch = -this.speed * 0.08;
-                const targetRoll = turning ? (inputManager.isPressed('KeyA') ? 0.08 : -0.08) : 0;
+                const targetRoll = turning ? (inputManager.isPressed('KeyA') ? 0.09 : -0.09) : 0;
+                
                 this.suspensionPitch += (targetPitch - this.suspensionPitch) * 0.1;
                 this.suspensionRoll += (targetRoll - this.suspensionRoll) * 0.1;
 
                 this.bodyGroup.rotation.x = this.suspensionPitch;
                 this.bodyGroup.rotation.z = this.suspensionRoll;
+                this.bodyGroup.position.y = this.engineVibration;
 
-                // Smoke Particle Emissions
-                const exhaustPos = new THREE.Vector3(0, 0.4, -2.5).applyMatrix4(this.mesh.matrixWorld);
-                if (Math.abs(this.speed) > 0.05) {
+                // Smoke Particle Emissions (Exhaust & Tire Drift Smoke)
+                const exhaustPos = new THREE.Vector3(0, 0.4, -2.6).applyMatrix4(this.mesh.matrixWorld);
+                if (Math.abs(this.speed) > 0.04) {
                     particleSystem.emit(exhaustPos, 0.8, false);
                 }
 
@@ -647,43 +724,60 @@
         // 5. PLAYER CONTROLLER CLASS
         // ==========================================
         class PlayerController {
-            constructor(camera) {
+            constructor(camera, scene) {
                 this.camera = camera;
+                this.scene = scene;
+                
+                // Heights: Standing (1.8), Prone Laying Flat (0.35)
                 this.standingHeight = 1.8;
-                this.proneHeight = 0.5;
+                this.proneHeight = 0.35;
+                this.targetHeight = 1.8;
                 this.currentHeight = 1.8;
+                
                 this.speed = 0.16;
                 this.position = new THREE.Vector3(0, 1.8, 18);
                 this.verticalVelocity = 0;
                 this.isJumping = false;
                 this.isProne = false;
                 this.isDriving = false;
+
+                // Downward Raycaster for Multi-story Floors & Stair Detection
+                this.downRaycaster = new THREE.Raycaster();
+                this.downRaycaster.ray.direction.set(0, -1, 0);
             }
 
             toggleProne() {
                 if (this.isDriving) return;
                 this.isProne = !this.isProne;
-                this.currentHeight = this.isProne ? this.proneHeight : this.standingHeight;
-                this.speed = this.isProne ? 0.05 : 0.16;
+                this.targetHeight = this.isProne ? this.proneHeight : this.standingHeight;
+                this.speed = this.isProne ? 0.04 : 0.16;
             }
 
             jump() {
                 if (!this.isJumping && !this.isDriving && !this.isProne) {
-                    this.verticalVelocity = 0.18;
+                    this.verticalVelocity = 0.19;
                     this.isJumping = true;
                 }
             }
 
-            calculateGroundHeight(px, pz) {
-                // House Porch Collision & Elevation
-                if (px >= -6.0 && px <= 6.0 && pz >= -6.0 && pz <= 6.0) {
-                    return 0.4 + this.currentHeight;
+            getSurfaceElevation(collidables) {
+                // Shoot ray downwards from player location to check for floors, deck, or stairs
+                const rayOrigin = this.position.clone();
+                rayOrigin.y += 3.0;
+                this.downRaycaster.ray.origin.copy(rayOrigin);
+
+                const hits = this.downRaycaster.intersectObjects(collidables, true);
+                if (hits.length > 0) {
+                    return hits[0].point.y;
                 }
-                return this.currentHeight;
+                return 0; // Default Ground Level
             }
 
-            update(inputManager) {
+            update(inputManager, collidables) {
                 if (this.isDriving) return;
+
+                // Smoothly Lerp Camera Eye Height when Laying Flat / Standing
+                this.currentHeight += (this.targetHeight - this.currentHeight) * 0.15;
 
                 const moveVector = new THREE.Vector3();
                 if (inputManager.isPressed('KeyW')) moveVector.z -= 1;
@@ -695,11 +789,13 @@
                 moveVector.applyEuler(new THREE.Euler(0, inputManager.yaw, 0, 'YXZ'));
                 this.position.addScaledVector(moveVector, this.speed);
 
-                const groundTargetY = this.calculateGroundHeight(this.position.x, this.position.z);
+                const surfaceY = this.getSurfaceElevation(collidables);
+                const groundTargetY = surfaceY + this.currentHeight;
 
                 this.position.y += this.verticalVelocity;
-                this.verticalVelocity -= 0.009;
+                this.verticalVelocity -= 0.0095;
 
+                // Ground / Stair Step Snap Logic
                 if (this.position.y <= groundTargetY) {
                     this.position.y = groundTargetY;
                     this.verticalVelocity = 0;
@@ -720,6 +816,7 @@
             constructor(scene, textures) {
                 this.scene = scene;
                 this.textures = textures;
+                this.collidables = [];
                 this.buildGround();
                 this.buildForest();
             }
@@ -735,26 +832,27 @@
                 ground.rotation.x = -Math.PI / 2;
                 ground.receiveShadow = true;
                 this.scene.add(ground);
+                this.collidables.push(ground);
             }
 
             buildForest() {
                 const trunkMat = new THREE.MeshStandardMaterial({ map: this.textures.bark, roughness: 0.8 });
                 const leavesMat = new THREE.MeshStandardMaterial({ color: 0x1b3b1e, roughness: 0.6 });
 
-                for (let i = 0; i < 180; i++) {
-                    const x = (Math.random() - 0.5) * 320;
-                    const z = (Math.random() - 0.5) * 320;
-                    if (Math.sqrt(x * x + z * z) < 22) continue;
+                for (let i = 0; i < 200; i++) {
+                    const x = (Math.random() - 0.5) * 340;
+                    const z = (Math.random() - 0.5) * 340;
+                    if (Math.sqrt(x * x + z * z) < 24) continue;
 
                     const tree = new THREE.Group();
-                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 6), trunkMat);
-                    trunk.position.y = 3;
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.55, 6.5), trunkMat);
+                    trunk.position.y = 3.25;
                     trunk.castShadow = true;
                     tree.add(trunk);
 
                     for (let t = 0; t < 3; t++) {
-                        const leaf = new THREE.Mesh(new THREE.ConeGeometry(3 - t * 0.6, 4, 8), leavesMat);
-                        leaf.position.y = 5 + t * 2;
+                        const leaf = new THREE.Mesh(new THREE.ConeGeometry(3.2 - t * 0.6, 4.2, 8), leavesMat);
+                        leaf.position.y = 5.2 + t * 2.1;
                         leaf.castShadow = true;
                         tree.add(leaf);
                     }
@@ -765,7 +863,7 @@
         }
 
         // ==========================================
-        // 7. FIXED OUTPOST HOUSE BUILDER CLASS
+        // 7. FIXED OUTPOST HOUSE WITH STAIRS CLASS
         // ==========================================
         class HouseBuilder {
             constructor(scene, textures) {
@@ -773,6 +871,7 @@
                 this.textures = textures;
                 this.doorOpen = false;
                 this.doorPivot = new THREE.Group();
+                this.collidables = [];
                 this.buildHouse();
             }
 
@@ -781,81 +880,153 @@
                 const woodMat = new THREE.MeshStandardMaterial({ map: this.textures.wood, roughness: 0.7 });
                 const stoneMat = new THREE.MeshStandardMaterial({ map: this.textures.brick, roughness: 0.8 });
                 const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.4 });
+                const frameMat = new THREE.MeshStandardMaterial({ color: 0x2b1a0e, roughness: 0.9 });
 
                 this.textures.wood.repeat.set(2, 2);
                 this.textures.brick.repeat.set(4, 2);
 
-                // 1. Stone Foundation
-                const foundation = new THREE.Mesh(new THREE.BoxGeometry(10, 0.8, 10), stoneMat);
+                // 1. Stone Foundation Platform
+                const foundation = new THREE.Mesh(new THREE.BoxGeometry(11, 0.8, 11), stoneMat);
                 foundation.position.set(0, 0.4, 0);
                 foundation.receiveShadow = true;
                 houseGroup.add(foundation);
+                this.collidables.push(foundation);
 
-                // 2. Wooden Floor Deck
-                const floor = new THREE.Mesh(new THREE.BoxGeometry(9.6, 0.2, 9.6), woodMat);
-                floor.position.set(0, 0.9, 0);
-                floor.receiveShadow = true;
-                houseGroup.add(floor);
+                // 2. Wooden Ground Floor Deck
+                const floor1 = new THREE.Mesh(new THREE.BoxGeometry(10.6, 0.2, 10.6), woodMat);
+                floor1.position.set(0, 0.9, 0);
+                floor1.receiveShadow = true;
+                houseGroup.add(floor1);
+                this.collidables.push(floor1);
 
-                // 3. Walls Structure
+                // 3. Multi-Story Second Floor Deck (Loft Platform)
+                const floor2 = new THREE.Mesh(new THREE.BoxGeometry(10.6, 0.3, 6.5), woodMat);
+                floor2.position.set(0, 4.8, -2.05);
+                floor2.receiveShadow = true;
+                floor2.castShadow = true;
+                houseGroup.add(floor2);
+                this.collidables.push(floor2);
+
+                // Loft Support Pillars
+                for (let px of [-4.8, 4.8]) {
+                    for (let pz of [-4.8, 1.0]) {
+                        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 3.8), frameMat);
+                        pillar.position.set(px, 2.8, pz);
+                        houseGroup.add(pillar);
+                    }
+                }
+
+                // 4. MULTI-STEP STAIRCASE (Connects Ground Floor to 2nd Floor)
+                const stairStepsCount = 12;
+                const stairWidth = 2.2;
+                const totalStairHeight = 3.9;
+                const totalStairDepth = 4.2;
+                const stepHeight = totalStairHeight / stairStepsCount;
+                const stepDepth = totalStairDepth / stairStepsCount;
+
+                const stairGroup = new THREE.Group();
+                stairGroup.position.set(3.4, 0.9, 1.0);
+
+                for (let i = 0; i < stairStepsCount; i++) {
+                    const step = new THREE.Mesh(new THREE.BoxGeometry(stairWidth, stepHeight, stepDepth + 0.05), woodMat);
+                    step.position.set(0, (i * stepHeight) + (stepHeight / 2), -(i * stepDepth));
+                    step.castShadow = true;
+                    step.receiveShadow = true;
+                    stairGroup.add(step);
+                    this.collidables.push(step);
+                }
+                houseGroup.add(stairGroup);
+
+                // Stair Handrail
+                const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 5.5), frameMat);
+                rail.position.set(4.5, 3.4, -0.6);
+                rail.rotation.x = Math.atan2(totalStairHeight, totalStairDepth);
+                houseGroup.add(rail);
+
+                // 5. Outer Walls Structure (Tall 2-Story Tower Heights)
                 // Back Wall
-                const wallBack = new THREE.Mesh(new THREE.BoxGeometry(9.6, 4.0, 0.3), woodMat);
-                wallBack.position.set(0, 3.0, -4.6);
+                const wallBack = new THREE.Mesh(new THREE.BoxGeometry(10.6, 8.0, 0.3), woodMat);
+                wallBack.position.set(0, 4.9, -5.15);
                 wallBack.castShadow = true;
                 houseGroup.add(wallBack);
 
                 // Left Wall
-                const wallLeft = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.0, 9.6), woodMat);
-                wallLeft.position.set(-4.6, 3.0, 0);
+                const wallLeft = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8.0, 10.6), woodMat);
+                wallLeft.position.set(-5.15, 4.9, 0);
                 wallLeft.castShadow = true;
                 houseGroup.add(wallLeft);
 
-                // Right Wall with Window Hole
-                const wallRight1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.0, 3.0), woodMat);
-                wallRight1.position.set(4.6, 3.0, -3.3);
-                const wallRight2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.0, 3.0), woodMat);
-                wallRight2.position.set(4.6, 3.0, 3.3);
-                const wallRightTop = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.2, 3.6), woodMat);
-                wallRightTop.position.set(4.6, 4.4, 0);
-                const windowPane = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.8), glassMat);
-                windowPane.position.set(4.6, 2.7, 0);
+                // Right Wall with Window Frame
+                const wallRight1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8.0, 3.2), woodMat);
+                wallRight1.position.set(5.15, 4.9, -3.7);
+                const wallRight2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8.0, 3.2), woodMat);
+                wallRight2.position.set(5.15, 4.9, 3.7);
+                const wallRightTop = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.5, 4.2), woodMat);
+                wallRightTop.position.set(5.15, 7.65, 0);
+
+                const windowFrame = new THREE.Mesh(new THREE.BoxGeometry(0.35, 2.6, 4.3), frameMat);
+                windowFrame.position.set(5.15, 3.8, 0);
+
+                const windowPane = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 2.4), glassMat);
+                windowPane.position.set(5.15, 3.8, 0);
                 windowPane.rotation.y = -Math.PI / 2;
-                houseGroup.add(wallRight1, wallRight2, wallRightTop, windowPane);
+                houseGroup.add(wallRight1, wallRight2, wallRightTop, windowFrame, windowPane);
 
                 // Front Wall with Door Frame
-                const wallFrontLeft = new THREE.Mesh(new THREE.BoxGeometry(3.8, 4.0, 0.3), woodMat);
-                wallFrontLeft.position.set(-2.8, 3.0, 4.6);
-                const wallFrontRight = new THREE.Mesh(new THREE.BoxGeometry(3.8, 4.0, 0.3), woodMat);
-                wallFrontRight.position.set(2.8, 3.0, 4.6);
-                const wallFrontTop = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.2, 0.3), woodMat);
-                wallFrontTop.position.set(0, 4.4, 4.6);
+                const wallFrontLeft = new THREE.Mesh(new THREE.BoxGeometry(4.2, 8.0, 0.3), woodMat);
+                wallFrontLeft.position.set(-3.2, 4.9, 5.15);
+                const wallFrontRight = new THREE.Mesh(new THREE.BoxGeometry(4.2, 8.0, 0.3), woodMat);
+                wallFrontRight.position.set(3.2, 4.9, 5.15);
+                const wallFrontTop = new THREE.Mesh(new THREE.BoxGeometry(2.2, 5.0, 0.3), woodMat);
+                wallFrontTop.position.set(0, 6.4, 5.15);
                 houseGroup.add(wallFrontLeft, wallFrontRight, wallFrontTop);
 
-                // 4. Animated Front Door
-                this.doorPivot.position.set(-1.0, 2.4, 4.6);
-                const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(1.9, 2.8, 0.15), woodMat);
-                doorMesh.position.set(0.95, 0, 0);
+                // 6. Animated Front Door
+                this.doorPivot.position.set(-1.1, 2.4, 5.15);
+                const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(2.1, 3.0, 0.15), woodMat);
+                doorMesh.position.set(1.05, 0, 0);
                 doorMesh.castShadow = true;
                 this.doorPivot.add(doorMesh);
                 houseGroup.add(this.doorPivot);
 
-                // 5. Pitched Roof
+                // 7. High Pitched Roof
                 const roofMat = new THREE.MeshStandardMaterial({ color: 0x221105, roughness: 0.6 });
-                const roof1 = new THREE.Mesh(new THREE.BoxGeometry(11.0, 0.3, 6.5), roofMat);
-                roof1.position.set(0, 5.8, -2.4);
-                roof1.rotation.x = Math.PI / 8;
+                const roof1 = new THREE.Mesh(new THREE.BoxGeometry(12.0, 0.3, 7.0), roofMat);
+                roof1.position.set(0, 9.8, -2.6);
+                roof1.rotation.x = Math.PI / 7;
 
-                const roof2 = new THREE.Mesh(new THREE.BoxGeometry(11.0, 0.3, 6.5), roofMat);
-                roof2.position.set(0, 5.8, 2.4);
-                roof2.rotation.x = -Math.PI / 8;
+                const roof2 = new THREE.Mesh(new THREE.BoxGeometry(12.0, 0.3, 7.0), roofMat);
+                roof2.position.set(0, 9.8, 2.6);
+                roof2.rotation.x = -Math.PI / 7;
                 houseGroup.add(roof1, roof2);
 
-                // Interior Desk & Bed Props
-                const bed = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 4.0), new THREE.MeshStandardMaterial({ color: 0xaa3333 }));
-                bed.position.set(-3.2, 1.3, -2.2);
-                const desk = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.2, 1.6), woodMat);
-                desk.position.set(2.8, 1.5, -3.2);
-                houseGroup.add(bed, desk);
+                // Interior Furniture Props (Bed Elevated for Laying Under Prone Mechanics)
+                const bedGroup = new THREE.Group();
+                const bedMattress = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, 4.2), new THREE.MeshStandardMaterial({ color: 0xaa3333 }));
+                bedMattress.position.y = 0.65;
+
+                const bedFrame = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.4, 4.3), frameMat);
+                bedFrame.position.y = 0.2;
+
+                // Bed Legs (Elevated Space underneath to lay down flat under bed)
+                for (let lx of [-1.1, 1.1]) {
+                    for (let lz of [-1.9, 1.9]) {
+                        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.5, 0.15), frameMat);
+                        leg.position.set(lx, -0.15, lz);
+                        bedGroup.add(leg);
+                    }
+                }
+                bedGroup.add(bedMattress, bedFrame);
+                bedGroup.position.set(-3.5, 1.3, -2.5);
+                houseGroup.add(bedGroup);
+
+                // 2nd Floor Loft Desk & Radio Prop
+                const desk = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.2, 1.6), woodMat);
+                desk.position.set(-2.5, 5.4, -3.8);
+
+                const radio = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.4), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+                radio.position.set(-2.5, 6.25, -3.8);
+                houseGroup.add(desk, radio);
 
                 this.scene.add(houseGroup);
             }
@@ -888,17 +1059,17 @@
                     this.prompt.innerText = "Press [E] to Exit Vehicle";
                     this.prompt.style.display = 'block';
                 } else {
-                    this.stanceVal.innerText = player.isProne ? 'Prone' : 'Walking';
+                    this.stanceVal.innerText = player.isProne ? 'Laying Down (Prone)' : 'Walking';
                     this.stanceVal.style.color = player.isProne ? '#ff9e59' : '#4b88ff';
                     this.crosshair.style.display = 'block';
 
                     const distTruck = player.position.distanceTo(vehicle.mesh.position);
-                    const distDoor = player.position.distanceTo(new THREE.Vector3(0, 1.8, 4.6));
+                    const distDoor = player.position.distanceTo(new THREE.Vector3(0, player.position.y, 5.15));
 
                     if (distTruck < 4.5) {
                         this.prompt.innerText = "Press [E] to Enter Vehicle";
                         this.prompt.style.display = 'block';
-                    } else if (distDoor < 3.0) {
+                    } else if (distDoor < 3.2) {
                         this.prompt.innerText = house.doorOpen ? "Press [E] to Close House Door" : "Press [E] to Open House Door";
                         this.prompt.style.display = 'block';
                     } else {
@@ -937,21 +1108,21 @@
                 this.renderer.shadowMap.enabled = true;
                 this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
                 this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                this.renderer.toneMappingExposure = 1.2;
+                this.renderer.toneMappingExposure = 1.25;
 
                 this.scene.background = new THREE.Color(0xff844c);
-                this.scene.fog = new THREE.FogExp2(0xff8c53, 0.005);
+                this.scene.fog = new THREE.FogExp2(0xff8c53, 0.0045);
 
-                const ambient = new THREE.AmbientLight(0xffa26b, 0.9);
-                const sun = new THREE.DirectionalLight(0xffb77d, 2.5);
-                sun.position.set(-80, 60, -50);
+                const ambient = new THREE.AmbientLight(0xffa26b, 0.95);
+                const sun = new THREE.DirectionalLight(0xffb77d, 2.6);
+                sun.position.set(-80, 65, -50);
                 sun.castShadow = true;
                 sun.shadow.mapSize.width = 4096;
                 sun.shadow.mapSize.height = 4096;
                 this.scene.add(ambient, sun);
 
-                // Visual Click Flash
-                this.flashLight = new THREE.PointLight(0xffaa00, 0, 12);
+                // Visual Flash Lamp
+                this.flashLight = new THREE.PointLight(0xffaa00, 0, 14);
                 this.flashLight.position.set(0.35, -0.2, -0.8);
                 this.camera.add(this.flashLight);
 
@@ -970,12 +1141,13 @@
                     bark: TextureGenerator.createBarkTexture(),
                     brick: TextureGenerator.createBrickTexture(),
                     tire: TextureGenerator.createTireTexture(),
-                    grass: TextureGenerator.createGrassTexture()
+                    grass: TextureGenerator.createGrassTexture(),
+                    carPaint: TextureGenerator.createCarPaintTexture()
                 };
             }
 
             triggerVisualFlash() {
-                this.flashLight.intensity = 10.0;
+                this.flashLight.intensity = 12.0;
                 this.flashMat.opacity = 1.0;
                 this.flashMesh.scale.set(1, 1, 1);
 
@@ -996,10 +1168,16 @@
                 this.input = new InputManager(this.canvas);
                 this.particles = new ParticleSystem(this.scene);
                 this.vehicle = new VehicleController(this.scene, this.textures);
-                this.player = new PlayerController(this.camera);
+                this.player = new PlayerController(this.camera, this.scene);
                 this.terrain = new TerrainBuilder(this.scene, this.textures);
                 this.house = new HouseBuilder(this.scene, this.textures);
                 this.hud = new HUDManager();
+
+                // Aggregate Collidables for Downward Raycasting Engine
+                this.allCollidables = [
+                    ...this.terrain.collidables,
+                    ...this.house.collidables
+                ];
             }
 
             initListeners() {
@@ -1020,7 +1198,7 @@
 
                 this.input.onKeyPress('KeyE', () => {
                     const distTruck = this.player.position.distanceTo(this.vehicle.mesh.position);
-                    const distDoor = this.player.position.distanceTo(new THREE.Vector3(0, 1.8, 4.6));
+                    const distDoor = this.player.position.distanceTo(new THREE.Vector3(0, this.player.position.y, 5.15));
 
                     if (this.player.isDriving) {
                         this.player.isDriving = false;
@@ -1029,7 +1207,7 @@
                         this.player.position.y = this.player.currentHeight;
                     } else if (distTruck < 4.5) {
                         this.player.isDriving = true;
-                    } else if (distDoor < 3.0) {
+                    } else if (distDoor < 3.2) {
                         this.house.toggleDoor();
                     }
                 });
@@ -1057,7 +1235,7 @@
                 const delta = this.clock.getDelta();
 
                 if (document.pointerLockElement === this.canvas) {
-                    this.player.update(this.input);
+                    this.player.update(this.input, this.allCollidables);
 
                     if (this.player.isDriving) {
                         this.vehicle.update(this.input, this.particles);

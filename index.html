@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Firewatch Survival - Extended Inventory & Vehicle Upgrade</title>
+    <title>Firewatch Survival - Opaque Graphics & 3rd Person Vehicle Engine</title>
     <style>
         * {
             box-sizing: border-box;
@@ -37,7 +37,7 @@
         #crosshair::before, #crosshair::after {
             content: '';
             position: absolute;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             box-shadow: 0 0 4px rgba(0,0,0,0.9);
         }
         #crosshair::before { top: 0; left: 8px; width: 2px; height: 18px; }
@@ -62,14 +62,14 @@
             z-index: 5;
         }
         .hud-panel {
-            background: rgba(10, 14, 22, 0.75);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(10, 14, 22, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.25);
             padding: 10px 18px;
             border-radius: 8px;
             backdrop-filter: blur(10px);
             margin-bottom: 8px;
             min-width: 220px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
         }
         .hud-title {
             font-size: 10px;
@@ -106,8 +106,8 @@
         .inv-slot {
             width: 72px;
             height: 72px;
-            background: rgba(10, 14, 22, 0.85);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(10, 14, 22, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.25);
             border-radius: 10px;
             display: flex;
             flex-direction: column;
@@ -116,14 +116,14 @@
             color: #fff;
             backdrop-filter: blur(10px);
             transition: all 0.2s ease;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
             position: relative;
         }
         .inv-slot.active {
             border-color: #ffaa00;
-            background: rgba(255, 170, 0, 0.25);
+            background: rgba(255, 170, 0, 0.35);
             transform: scale(1.08);
-            box-shadow: 0 0 15px rgba(255, 170, 0, 0.6);
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.7);
         }
         .inv-key {
             position: absolute;
@@ -150,8 +150,8 @@
             position: absolute;
             bottom: 30px;
             right: 30px;
-            background: rgba(10, 14, 22, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(10, 14, 22, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.25);
             padding: 16px 28px;
             border-radius: 12px;
             backdrop-filter: blur(10px);
@@ -159,7 +159,7 @@
             text-align: center;
             z-index: 5;
             pointer-events: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
         }
         #speed-val {
             font-size: 42px;
@@ -173,7 +173,7 @@
             bottom: 22%;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(10, 14, 22, 0.9);
+            background: rgba(10, 14, 22, 0.95);
             border: 1px solid #ffcc00;
             color: #ffcc00;
             padding: 12px 28px;
@@ -198,7 +198,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle, rgba(20, 26, 38, 0.88) 0%, rgba(4, 6, 10, 0.96) 100%);
+            background: radial-gradient(circle, rgba(20, 26, 38, 0.92) 0%, rgba(4, 6, 10, 0.98) 100%);
             color: #ffffff;
             display: flex;
             flex-direction: column;
@@ -209,13 +209,13 @@
             backdrop-filter: blur(12px);
         }
         .start-card {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 40px 60px;
             border-radius: 16px;
             text-align: center;
-            max-width: 620px;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+            max-width: 640px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.85);
         }
         .start-card h1 {
             font-size: 34px;
@@ -278,7 +278,6 @@
         </div>
     </div>
 
-    <!-- Inventory Hotbar -->
     <div id="inventory-bar">
         <div class="inv-slot active" id="slot-0"><span class="inv-key">1</span><div class="inv-icon">🔫</div><div class="inv-label">Rifle</div></div>
         <div class="inv-slot" id="slot-1"><span class="inv-key">2</span><div class="inv-icon">🔦</div><div class="inv-label">Light</div></div>
@@ -297,13 +296,13 @@
 
     <div id="instructions">
         <div class="start-card">
-            <h1>FIREWATCH EXPANDED</h1>
-            <p><strong>Slow Zombies, Full Car Driving & Multi-Floor Stairs</strong></p>
-            <p><strong>WASD:</strong> Walk / Drive Vehicle | <strong>Shift:</strong> Drift Car</p>
-            <p><strong>1-5 Keys:</strong> Select Hotbar Inventory | <strong>Left-Click:</strong> Shoot / Use Item</p>
-            <p><strong>F Key:</strong> Get In / Out of Vehicle (Requires Car Key)</p>
-            <p><strong>E Key:</strong> Sleep / Repair Tower Planks</p>
-            <div class="btn">CLICK TO PLAY</div>
+            <h1>FIREWATCH ENGINE V3</h1>
+            <p><strong>Opaque Materials & 3rd-Person Driving Mode</strong></p>
+            <p><strong>WASD:</strong> Walk / Drive Vehicle | <strong>Shift:</strong> Drift Vehicle</p>
+            <p><strong>1-5 Keys:</strong> Hotbar Slots | <strong>Left-Click:</strong> Shoot / Use Item</p>
+            <p><strong>F Key:</strong> Get In / Out of Vehicle (Switches to 3rd Person View)</p>
+            <p><strong>E Key:</strong> Sleep / Repair Tower Structure</p>
+            <div class="btn">START GAME</div>
         </div>
     </div>
 
@@ -321,40 +320,49 @@
             GRAVITY: 28.0,
             FIRE_RATE: 160,
             BULLET_SPEED: 240,
-            ZOMBIE_SPEED_GROUND: 1.0, // SLOW ZOMBIES
-            MAX_ZOMBIES: 30
+            ZOMBIE_SPEED_GROUND: 1.0,
+            MAX_ZOMBIES: 30,
+            CAR_CAM_DISTANCE: 8.5,
+            CAR_CAM_HEIGHT: 3.5
         };
         CONFIG.TOTAL_CYCLE = CONFIG.DAY_DURATION + CONFIG.NIGHT_DURATION;
 
-        let state = {
-            gameTime: 120,
-            score: 0,
-            towerHealth: 100,
-            isNight: false,
-            isSleeping: false,
-            lastShotTime: 0,
-            isLocked: false,
-            inCar: false,
-            playerVy: 0,
-            activeSlot: 0,
-            inventory: ['rifle', 'flashlight', 'medkit', 'carkey', 'planks'],
-            medkitCount: 2,
-            plankCount: 5
-        };
+        class GameState {
+            constructor() {
+                this.gameTime = 120;
+                this.score = 0;
+                this.towerHealth = 100;
+                this.isNight = false;
+                this.isSleeping = false;
+                this.lastShotTime = 0;
+                this.isLocked = false;
+                this.inCar = false;
+                this.playerVy = 0;
+                this.activeSlot = 0;
+                this.inventory = ['rifle', 'flashlight', 'medkit', 'carkey', 'planks'];
+                this.medkitCount = 3;
+                this.plankCount = 6;
+            }
+        }
 
-        let vehicle = {
-            mesh: null,
-            wheels: [],
-            headlights: [],
-            pos: new THREE.Vector3(14, 0.6, 14),
-            speed: 0,
-            maxSpeed: 75,
-            accel: 55,
-            brake: 75,
-            drag: 0.98,
-            heading: 0,
-            isDrifting: false
-        };
+        class VehicleState {
+            constructor() {
+                this.mesh = null;
+                this.wheels = [];
+                this.headlights = [];
+                this.pos = new THREE.Vector3(14, 0.6, 14);
+                this.speed = 0;
+                this.maxSpeed = 80;
+                this.accel = 60;
+                this.brake = 80;
+                this.drag = 0.98;
+                this.heading = 0;
+                this.isDrifting = false;
+            }
+        }
+
+        const state = new GameState();
+        const vehicle = new VehicleState();
 
         let zombies = [];
         let bullets = [];
@@ -369,7 +377,7 @@
         let controls = { moveForward: false, moveBackward: false, moveLeft: false, moveRight: false, drift: false };
 
         // ============================================================================
-        // PROCEDURAL TEXTURE GENERATION
+        // PROCEDURAL TEXTURE GENERATOR CLASS
         // ============================================================================
         class TextureGenerator {
             static createWoodTexture() {
@@ -378,9 +386,24 @@
                 const ctx = canvas.getContext('2d');
                 ctx.fillStyle = '#4a2e16'; ctx.fillRect(0, 0, 512, 512);
 
-                for (let i = 0; i < 500; i++) {
-                    ctx.fillStyle = `rgba(30, 15, 5, ${Math.random() * 0.15})`;
-                    ctx.fillRect(0, Math.random() * 512, 512, Math.random() * 8 + 2);
+                for (let i = 0; i < 800; i++) {
+                    ctx.fillStyle = `rgba(20, 10, 3, ${Math.random() * 0.22})`;
+                    ctx.fillRect(0, Math.random() * 512, 512, Math.random() * 6 + 2);
+                }
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+                return texture;
+            }
+
+            static createDarkWoodTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512; canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#2b1b0e'; ctx.fillRect(0, 0, 512, 512);
+
+                for (let i = 0; i < 600; i++) {
+                    ctx.fillStyle = `rgba(10, 5, 2, ${Math.random() * 0.3})`;
+                    ctx.fillRect(0, Math.random() * 512, 512, Math.random() * 5 + 1);
                 }
                 const texture = new THREE.CanvasTexture(canvas);
                 texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
@@ -393,9 +416,9 @@
                 const ctx = canvas.getContext('2d');
                 ctx.fillStyle = '#2d1e12'; ctx.fillRect(0, 0, 256, 256);
 
-                for (let i = 0; i < 300; i++) {
-                    ctx.fillStyle = `rgba(15, 8, 4, ${Math.random() * 0.3})`;
-                    ctx.fillRect(Math.random() * 256, 0, Math.random() * 6 + 2, 256);
+                for (let i = 0; i < 400; i++) {
+                    ctx.fillStyle = `rgba(15, 8, 4, ${Math.random() * 0.35})`;
+                    ctx.fillRect(Math.random() * 256, 0, Math.random() * 5 + 2, 256);
                 }
                 const texture = new THREE.CanvasTexture(canvas);
                 texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
@@ -408,12 +431,39 @@
                 const ctx = canvas.getContext('2d');
                 ctx.fillStyle = '#233d19'; ctx.fillRect(0, 0, 512, 512);
 
-                for (let i = 0; i < 2000; i++) {
+                for (let i = 0; i < 3000; i++) {
                     ctx.fillStyle = Math.random() > 0.5 ? '#2d4e20' : '#1b3013';
-                    ctx.fillRect(Math.random() * 512, Math.random() * 512, 4, 4);
+                    ctx.fillRect(Math.random() * 512, Math.random() * 512, 3, 3);
                 }
                 const texture = new THREE.CanvasTexture(canvas);
                 texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+                return texture;
+            }
+
+            static createTireTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#111111'; ctx.fillRect(0, 0, 128, 128);
+                ctx.fillStyle = '#222222';
+                for (let i = 0; i < 128; i += 8) {
+                    ctx.fillRect(i, 0, 4, 128);
+                }
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+                return texture;
+            }
+
+            static createMetalTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 256; canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#333333'; ctx.fillRect(0, 0, 256, 256);
+                for (let i = 0; i < 500; i++) {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.05})`;
+                    ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+                }
+                const texture = new THREE.CanvasTexture(canvas);
                 return texture;
             }
 
@@ -561,7 +611,7 @@
             fireLight.position.set(x, y + 0.5, z); scene.add(fireLight);
 
             const logGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.2);
-            const logMat = new THREE.MeshStandardMaterial({ map: TextureGenerator.createBarkTexture() });
+            const logMat = new THREE.MeshStandardMaterial({ map: TextureGenerator.createBarkTexture(), roughness: 0.9, metalness: 0.0 });
             const log1 = new THREE.Mesh(logGeo, logMat); log1.position.set(x, y + 0.1, z); log1.rotation.z = Math.PI / 3;
             const log2 = new THREE.Mesh(logGeo, logMat); log2.position.set(x, y + 0.1, z); log2.rotation.z = -Math.PI / 3;
             scene.add(log1, log2);
@@ -682,12 +732,12 @@
             terrain.receiveShadow = true; scene.add(terrain);
             colliders.push(terrain);
 
-            // Forest
+            // Forest Setup
             const barkTex = TextureGenerator.createBarkTexture();
             const trunkGeo = new THREE.CylinderGeometry(0.35, 0.65, 8, 8);
             const foliageGeo = new THREE.ConeGeometry(3.8, 9, 8);
-            const trunkMat = new THREE.MeshStandardMaterial({ map: barkTex, roughness: 0.9 });
-            const foliageMat = new THREE.MeshStandardMaterial({ color: 0x1b3618, roughness: 0.8 });
+            const trunkMat = new THREE.MeshStandardMaterial({ map: barkTex, roughness: 0.9, metalness: 0.0 });
+            const foliageMat = new THREE.MeshStandardMaterial({ color: 0x1b3618, roughness: 0.8, metalness: 0.0 });
 
             const forest = new THREE.Group();
             for (let i = 0; i < 300; i++) {
@@ -705,14 +755,16 @@
         }
 
         // ============================================================================
-        // TOWER WITH UP/DOWN DUAL-DIRECTION STAIRCASE
+        // FULLY OPAQUE TOWER WITH DUAL-DIRECTION ACCESSIBLE STAIRCASE
         // ============================================================================
         function createFirewatchTowerWithStairs() {
             const tower = new THREE.Group();
             const woodTex = TextureGenerator.createWoodTexture();
-            const woodMat = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.8 });
-            const darkWoodMat = new THREE.MeshStandardMaterial({ map: woodTex, color: 0x888888, roughness: 0.9 });
-            const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, roughness: 0.1, transmission: 0.8 });
+            const darkWoodTex = TextureGenerator.createDarkWoodTexture();
+
+            // 100% Fully Opaque Structural Materials
+            const woodMat = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.8, metalness: 0.0, transparent: false, opacity: 1.0 });
+            const darkWoodMat = new THREE.MeshStandardMaterial({ map: darkWoodTex, roughness: 0.85, metalness: 0.0, transparent: false, opacity: 1.0 });
 
             // Stilts
             const stiltGeo = new THREE.CylinderGeometry(0.5, 0.7, CONFIG.TOWER_HEIGHT, 8);
@@ -723,7 +775,7 @@
                 tower.add(stilt);
             });
 
-            // Deck
+            // Deck Platform
             const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(11, 0.2, 11), woodMat);
             cabinFloor.position.set(0, CONFIG.TOWER_HEIGHT + 0.05, 0);
             tower.add(cabinFloor); colliders.push(cabinFloor);
@@ -743,7 +795,7 @@
                 landing.position.set(landX, endY, landZ);
                 tower.add(landing); colliders.push(landing);
 
-                // Ramp Collider for Climbing Up & Walking Down
+                // Ramp Colliders
                 const rampLength = Math.hypot(8.0, flightHeight);
                 const rampAngle = Math.atan2(flightHeight, 8.0);
                 const ramp = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.2, rampLength + 0.4), woodMat);
@@ -771,13 +823,15 @@
                 }
             }
 
-            // Cabin Walls & Roof
+            // Opaque Cabin Walls & Solid Wood Framing
             const wallH = 4.5; const size = 11;
-            const windowGeo = new THREE.BoxGeometry(size, wallH, 0.08);
-            const w1 = new THREE.Mesh(windowGeo, glassMat); w1.position.set(0, CONFIG.TOWER_HEIGHT + wallH / 2, -size / 2);
-            const w2 = new THREE.Mesh(windowGeo, glassMat); w2.position.set(0, CONFIG.TOWER_HEIGHT + wallH / 2, size / 2);
-            const w3 = new THREE.Mesh(windowGeo, glassMat); w3.position.set(-size / 2, CONFIG.TOWER_HEIGHT + wallH / 2, 0); w3.rotation.y = Math.PI / 2;
-            const w4 = new THREE.Mesh(windowGeo, glassMat); w4.position.set(size / 2, CONFIG.TOWER_HEIGHT + wallH / 2, 0); w4.rotation.y = Math.PI / 2;
+            const wallGeoHorizontal = new THREE.BoxGeometry(size, wallH, 0.2);
+            const wallGeoVertical = new THREE.BoxGeometry(0.2, wallH, size);
+
+            const w1 = new THREE.Mesh(wallGeoHorizontal, darkWoodMat); w1.position.set(0, CONFIG.TOWER_HEIGHT + wallH / 2, -size / 2);
+            const w2 = new THREE.Mesh(wallGeoHorizontal, darkWoodMat); w2.position.set(0, CONFIG.TOWER_HEIGHT + wallH / 2, size / 2);
+            const w3 = new THREE.Mesh(wallGeoVertical, darkWoodMat); w3.position.set(-size / 2, CONFIG.TOWER_HEIGHT + wallH / 2, 0);
+            const w4 = new THREE.Mesh(wallGeoVertical, darkWoodMat); w4.position.set(size / 2, CONFIG.TOWER_HEIGHT + wallH / 2, 0);
             tower.add(w1, w2, w3, w4);
 
             const roof = new THREE.Mesh(new THREE.ConeGeometry(10.5, 3.5, 4), darkWoodMat);
@@ -787,9 +841,9 @@
             // Bed
             const bedGroup = new THREE.Group();
             const frame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, 4.2), darkWoodMat);
-            const mattress = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.4, 4.0), new THREE.MeshStandardMaterial({ color: 0xdddddd }));
+            const mattress = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.4, 4.0), new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.9, metalness: 0.0 }));
             mattress.position.y = 0.35;
-            const blanket = new THREE.Mesh(new THREE.BoxGeometry(2.22, 0.42, 2.8), new THREE.MeshStandardMaterial({ color: 0x8b2626 }));
+            const blanket = new THREE.Mesh(new THREE.BoxGeometry(2.22, 0.42, 2.8), new THREE.MeshStandardMaterial({ color: 0x8b2626, roughness: 0.8, metalness: 0.0 }));
             blanket.position.set(0, 0.37, 0.5);
             bedGroup.add(frame, mattress, blanket);
             bedGroup.position.set(-3.8, CONFIG.TOWER_HEIGHT + 0.3, -3.2);
@@ -798,15 +852,19 @@
             scene.add(tower);
         }
 
+        // ============================================================================
+        // OPAQUE VEHICLE CREATION
+        // ============================================================================
         function createCar() {
             const car = new THREE.Group();
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, metalness: 0.7, roughness: 0.2 });
-            const glassMat = new THREE.MeshStandardMaterial({ color: 0x111122, metalness: 0.9, roughness: 0.1 });
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, metalness: 0.6, roughness: 0.3, transparent: false, opacity: 1.0 });
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2, transparent: false, opacity: 1.0 });
+            const tireTex = TextureGenerator.createTireTexture();
+            const wheelMat = new THREE.MeshStandardMaterial({ map: tireTex, roughness: 0.8, metalness: 0.1, transparent: false, opacity: 1.0 });
 
             const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 4.5), bodyMat);
             chassis.position.y = 0.6; chassis.castShadow = true;
-            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.7, 2.2), glassMat);
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.7, 2.2), cabinMat);
             cabin.position.set(0, 1.25, -0.2); cabin.castShadow = true;
             car.add(chassis, cabin);
 
@@ -829,8 +887,8 @@
 
         function createWeapon() {
             const gun = new THREE.Group();
-            const metalMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.85, roughness: 0.2 });
-            const woodMat = new THREE.MeshStandardMaterial({ map: TextureGenerator.createWoodTexture(), roughness: 0.7 });
+            const metalMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.85, roughness: 0.2, transparent: false });
+            const woodMat = new THREE.MeshStandardMaterial({ map: TextureGenerator.createWoodTexture(), roughness: 0.7, transparent: false });
 
             const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.1, 10), metalMat);
             barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0, -0.4);
@@ -923,7 +981,7 @@
             }
         }
 
-        // Down/Up Stair Gravity Physics Raycaster
+        // Stair & Terrain Physics Engine
         const raycaster = new THREE.Raycaster();
         const rayDown = new THREE.Vector3(0, -1, 0);
 
@@ -939,7 +997,7 @@
                 yawObject.position.addScaledVector(moveDir, CONFIG.PLAYER_SPEED * delta);
             }
 
-            // Raycasting Floor and Stair Collision
+            // Continuous Stair Raycasting
             raycaster.set(yawObject.position, rayDown);
             const intersects = raycaster.intersectObjects(colliders, false);
 
@@ -949,7 +1007,6 @@
             const targetEyeY = groundY + CONFIG.PLAYER_HEIGHT;
 
             if (yawObject.position.y <= targetEyeY + 0.45 && state.playerVy <= 0) {
-                // Smooth step climb up & down stairs
                 yawObject.position.y += (targetEyeY - yawObject.position.y) * Math.min(1.0, 24.0 * delta);
                 state.playerVy = 0;
             } else {
@@ -973,9 +1030,13 @@
                 gunMesh.visible = (state.inventory[state.activeSlot] === 'rifle');
                 document.getElementById('speedometer-panel').style.display = 'none';
                 yawObject.position.copy(vehicle.mesh.position).add(new THREE.Vector3(2.5, CONFIG.PLAYER_HEIGHT, 0));
+                pitchObject.position.set(0, 0, 0);
             }
         }
 
+        // ============================================================================
+        // 3RD-PERSON DRIVING CAMERA & VEHICLE DYNAMICS ENGINE
+        // ============================================================================
         function updateVehiclePhysics(delta) {
             if (state.inCar) {
                 if (controls.moveForward) vehicle.speed += vehicle.accel * delta;
@@ -992,7 +1053,19 @@
                 const forward = new THREE.Vector3(Math.sin(vehicle.heading), 0, Math.cos(vehicle.heading));
                 vehicle.mesh.position.addScaledVector(forward, (vehicle.speed * 0.447) * delta);
 
-                yawObject.position.copy(vehicle.mesh.position).add(new THREE.Vector3(0, 1.2, 0));
+                // Wheel rotation
+                const wheelRotSpeed = (vehicle.speed * delta) / 0.4;
+                vehicle.wheels.forEach(w => w.rotation.x += wheelRotSpeed);
+
+                // 3rd Person Follow Camera Positioning Behind Vehicle
+                const camOffset = new THREE.Vector3(0, CONFIG.CAR_CAM_HEIGHT, -CONFIG.CAR_CAM_DISTANCE);
+                camOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), vehicle.heading);
+                const targetCamPos = vehicle.mesh.position.clone().add(camOffset);
+
+                yawObject.position.lerp(targetCamPos, 10 * delta);
+                yawObject.lookAt(vehicle.mesh.position.clone().add(new THREE.Vector3(0, 1.2, 0)));
+                pitchObject.rotation.x = 0;
+
                 document.getElementById('speed-val').innerText = `${Math.abs(Math.round(vehicle.speed))}`;
             } else {
                 vehicle.speed *= 0.95;
@@ -1037,8 +1110,8 @@
         function spawnZombie() {
             if (zombies.length >= CONFIG.MAX_ZOMBIES) return;
             const zGroup = new THREE.Group();
-            const skinMat = new THREE.MeshStandardMaterial({ color: 0x3d5435, roughness: 0.9 });
-            const clothesMat = new THREE.MeshStandardMaterial({ color: 0x1f2833, roughness: 0.8 });
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0x3d5435, roughness: 0.9, transparent: false });
+            const clothesMat = new THREE.MeshStandardMaterial({ color: 0x1f2833, roughness: 0.8, transparent: false });
 
             const head = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.55, 0.55), skinMat); head.position.y = 1.65;
             const torso = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.1, 0.4), clothesMat); torso.position.y = 0.85;
@@ -1053,7 +1126,7 @@
         }
 
         // ============================================================================
-        // GAME LOOP
+        // ENGINE ANIMATION LOOP
         // ============================================================================
         let lastTimestamp = 0;
 
@@ -1101,7 +1174,7 @@
             const bedPos = new THREE.Vector3(); bedMesh.getWorldPosition(bedPos);
             document.getElementById('interact-msg').style.display = (state.isNight && yawObject.position.distanceTo(bedPos) < 4.8 && !state.inCar) ? 'block' : 'none';
 
-            // Bullets
+            // Projectile Tracking
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
                 b.mesh.position.addScaledVector(b.direction, CONFIG.BULLET_SPEED * delta);
@@ -1124,12 +1197,13 @@
             }
 
             // Slow Zombie AI Movement
+            const targetPos = state.inCar ? vehicle.mesh.position : yawObject.position;
             for (let i = zombies.length - 1; i >= 0; i--) {
                 const z = zombies[i];
-                const dir = new THREE.Vector3().subVectors(yawObject.position, z.mesh.position);
+                const dir = new THREE.Vector3().subVectors(targetPos, z.mesh.position);
                 dir.y = 0; dir.normalize();
-                z.mesh.position.addScaledVector(dir, CONFIG.ZOMBIE_SPEED_GROUND * delta); // SLOW ZOMBIE SPEED
-                z.mesh.lookAt(yawObject.position.x, z.mesh.position.y, yawObject.position.z);
+                z.mesh.position.addScaledVector(dir, CONFIG.ZOMBIE_SPEED_GROUND * delta);
+                z.mesh.lookAt(targetPos.x, z.mesh.position.y, targetPos.z);
             }
 
             renderer.render(scene, camera);

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Firewatch Survival & High-Speed Drift Engine</title>
+    <title>Firewatch Survival - Extended Inventory & Vehicle Upgrade</title>
     <style>
         * {
             box-sizing: border-box;
@@ -64,23 +64,23 @@
         .hud-panel {
             background: rgba(10, 14, 22, 0.75);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 12px 20px;
+            padding: 10px 18px;
             border-radius: 8px;
             backdrop-filter: blur(10px);
-            margin-bottom: 10px;
-            min-width: 240px;
+            margin-bottom: 8px;
+            min-width: 220px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
         .hud-title {
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
             color: #8a9ba8;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             letter-spacing: 1.5px;
             font-weight: 700;
         }
         .hud-value {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 800;
             color: #ffffff;
         }
@@ -93,12 +93,64 @@
             100% { text-shadow: 0 0 16px rgba(255,0,0,1); }
         }
 
+        #inventory-bar {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 5;
+            pointer-events: none;
+        }
+        .inv-slot {
+            width: 72px;
+            height: 72px;
+            background: rgba(10, 14, 22, 0.85);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .inv-slot.active {
+            border-color: #ffaa00;
+            background: rgba(255, 170, 0, 0.25);
+            transform: scale(1.08);
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.6);
+        }
+        .inv-key {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #ffaa00;
+        }
+        .inv-icon {
+            font-size: 22px;
+            margin-bottom: 2px;
+        }
+        .inv-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            color: #d0d8e0;
+        }
+
         #speedometer-panel {
             display: none;
             position: absolute;
             bottom: 30px;
             right: 30px;
-            background: rgba(10, 14, 22, 0.8);
+            background: rgba(10, 14, 22, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 16px 28px;
             border-radius: 12px;
@@ -116,22 +168,6 @@
             text-shadow: 0 0 10px rgba(255,170,0,0.5);
         }
 
-        #health-bar-container {
-            width: 100%;
-            height: 10px;
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 5px;
-            overflow: hidden;
-            margin-top: 8px;
-            border: 1px solid rgba(255,255,255,0.15);
-        }
-        #health-bar {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, #ff3333, #ffaa00, #4caf50);
-            transition: width 0.2s ease;
-        }
-
         #interact-msg {
             position: absolute;
             bottom: 22%;
@@ -142,7 +178,7 @@
             color: #ffcc00;
             padding: 12px 28px;
             border-radius: 30px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             letter-spacing: 1px;
             display: none;
@@ -175,42 +211,38 @@
         .start-card {
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 45px 65px;
+            padding: 40px 60px;
             border-radius: 16px;
             text-align: center;
-            max-width: 600px;
+            max-width: 620px;
             box-shadow: 0 25px 60px rgba(0,0,0,0.8);
         }
         .start-card h1 {
-            font-size: 36px;
-            margin-bottom: 14px;
+            font-size: 34px;
+            margin-bottom: 12px;
             color: #ff4422;
             letter-spacing: 2px;
             text-transform: uppercase;
             text-shadow: 0 0 15px rgba(255,68,34,0.4);
         }
         .start-card p {
-            font-size: 15px;
-            margin: 10px 0;
+            font-size: 14px;
+            margin: 8px 0;
             color: #d0d8e0;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         .start-card .btn {
             display: inline-block;
-            margin-top: 28px;
-            padding: 16px 36px;
+            margin-top: 24px;
+            padding: 15px 34px;
             background: linear-gradient(135deg, #ff4422, #cc2200);
             color: #fff;
             font-weight: 800;
-            font-size: 16px;
+            font-size: 15px;
             border-radius: 8px;
             letter-spacing: 1px;
             box-shadow: 0 6px 20px rgba(255, 68, 34, 0.5);
             transition: all 0.2s ease;
-        }
-        .start-card .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 68, 34, 0.7);
         }
 
         #sleep-overlay {
@@ -237,55 +269,60 @@
             <div id="time-display" class="hud-value">Day (10:00)</div>
         </div>
         <div class="hud-panel">
-            <div class="hud-title">Combat Kills</div>
+            <div class="hud-title">Combat Eliminates</div>
             <div id="score-display" class="hud-value">Kills: 0</div>
         </div>
         <div class="hud-panel">
             <div class="hud-title">Tower Integrity</div>
             <div id="health-display" class="hud-value">100%</div>
-            <div id="health-bar-container">
-                <div id="health-bar"></div>
-            </div>
         </div>
     </div>
 
+    <!-- Inventory Hotbar -->
+    <div id="inventory-bar">
+        <div class="inv-slot active" id="slot-0"><span class="inv-key">1</span><div class="inv-icon">🔫</div><div class="inv-label">Rifle</div></div>
+        <div class="inv-slot" id="slot-1"><span class="inv-key">2</span><div class="inv-icon">🔦</div><div class="inv-label">Light</div></div>
+        <div class="inv-slot" id="slot-2"><span class="inv-key">3</span><div class="inv-icon">🩹</div><div class="inv-label">Medkit</div></div>
+        <div class="inv-slot" id="slot-3"><span class="inv-key">4</span><div class="inv-icon">🔑</div><div class="inv-label">Car Key</div></div>
+        <div class="inv-slot" id="slot-4"><span class="inv-key">5</span><div class="inv-icon">🪵</div><div class="inv-label">Planks</div></div>
+    </div>
+
     <div id="speedometer-panel">
-        <div class="hud-title">VEHICLE SPEED</div>
+        <div class="hud-title">TRUCK SPEED</div>
         <div id="speed-val">0 <span style="font-size: 18px;">MPH</span></div>
     </div>
 
-    <div id="interact-msg">Press [E] to Sleep (Skip Night)</div>
+    <div id="interact-msg">Press [E] to Interact</div>
     <div id="sleep-overlay"></div>
 
     <div id="instructions">
         <div class="start-card">
-            <h1>FIREWATCH SURVIVAL</h1>
-            <p><strong>Procedural Textures & Visual Fire Shader Engine</strong></p>
-            <p><strong>Day Cycle:</strong> 10 Minutes | <strong>Night Cycle:</strong> 30 Seconds</p>
-            <p><strong>Stairs & Physics:</strong> Walk accurately down stairs with precise raycast collision gravity!</p>
-            <p><strong>Vehicle & Campfire:</strong> Drive an 80 MPH vehicle with smoke effects and relax by volumetric fire shader effects.</p>
-            <p style="margin-top: 18px; font-size: 13px; color: #8a9ba8;">WASD: Move/Drive | Shift: Drift | Mouse: Aim | Left-Click: Fire | F: Drive | E: Sleep</p>
-            <div class="btn">LAUNCH ENGINE</div>
+            <h1>FIREWATCH EXPANDED</h1>
+            <p><strong>Slow Zombies, Full Car Driving & Multi-Floor Stairs</strong></p>
+            <p><strong>WASD:</strong> Walk / Drive Vehicle | <strong>Shift:</strong> Drift Car</p>
+            <p><strong>1-5 Keys:</strong> Select Hotbar Inventory | <strong>Left-Click:</strong> Shoot / Use Item</p>
+            <p><strong>F Key:</strong> Get In / Out of Vehicle (Requires Car Key)</p>
+            <p><strong>E Key:</strong> Sleep / Repair Tower Planks</p>
+            <div class="btn">CLICK TO PLAY</div>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // ============================================================================
-        // GAME CONFIGURATION
+        // GAME CONFIGURATION & ENGINE STATE
         // ============================================================================
         const CONFIG = {
             DAY_DURATION: 600,
-            NIGHT_DURATION: 30,
+            NIGHT_DURATION: 40,
             TOWER_HEIGHT: 26.5,
             PLAYER_SPEED: 7.5,
             PLAYER_HEIGHT: 1.75,
             GRAVITY: 28.0,
             FIRE_RATE: 160,
             BULLET_SPEED: 240,
-            ZOMBIE_SPEED_GROUND: 3.5,
-            ZOMBIE_SPEED_STAIRS: 3.8,
-            MAX_ZOMBIES: 35
+            ZOMBIE_SPEED_GROUND: 1.0, // SLOW ZOMBIES
+            MAX_ZOMBIES: 30
         };
         CONFIG.TOTAL_CYCLE = CONFIG.DAY_DURATION + CONFIG.NIGHT_DURATION;
 
@@ -298,7 +335,11 @@
             lastShotTime: 0,
             isLocked: false,
             inCar: false,
-            playerVy: 0
+            playerVy: 0,
+            activeSlot: 0,
+            inventory: ['rifle', 'flashlight', 'medkit', 'carkey', 'planks'],
+            medkitCount: 2,
+            plankCount: 5
         };
 
         let vehicle = {
@@ -307,17 +348,16 @@
             headlights: [],
             pos: new THREE.Vector3(14, 0.6, 14),
             speed: 0,
-            maxSpeed: 80,
-            accel: 65,
-            brake: 85,
-            drag: 0.982,
+            maxSpeed: 75,
+            accel: 55,
+            brake: 75,
+            drag: 0.98,
             heading: 0,
             isDrifting: false
         };
 
         let zombies = [];
         let bullets = [];
-        let particleEffects = [];
         let fireParticleSystems = [];
         let colliders = [];
 
@@ -329,7 +369,7 @@
         let controls = { moveForward: false, moveBackward: false, moveLeft: false, moveRight: false, drift: false };
 
         // ============================================================================
-        // PROCEDURAL CANVAS TEXTURE GENERATOR ENGINE
+        // PROCEDURAL TEXTURE GENERATION
         // ============================================================================
         class TextureGenerator {
             static createWoodTexture() {
@@ -392,7 +432,7 @@
         }
 
         // ============================================================================
-        // SYNTHESIZED AUDIO ENGINE
+        // SYNTHESIZED WEB AUDIO ENGINE
         // ============================================================================
         class SoundEngine {
             constructor() { this.ctx = null; this.engineGain = null; this.engineOsc = null; }
@@ -410,10 +450,10 @@
                 this.engineOsc = this.ctx.createOscillator();
                 this.engineGain = this.ctx.createGain();
                 this.engineOsc.type = 'sawtooth';
-                this.engineOsc.frequency.setValueAtTime(30, this.ctx.currentTime);
+                this.engineOsc.frequency.setValueAtTime(25, this.ctx.currentTime);
                 this.engineGain.gain.setValueAtTime(0, this.ctx.currentTime);
                 const filter = this.ctx.createBiquadFilter();
-                filter.type = 'lowpass'; filter.frequency.setValueAtTime(450, this.ctx.currentTime);
+                filter.type = 'lowpass'; filter.frequency.setValueAtTime(400, this.ctx.currentTime);
                 this.engineOsc.connect(filter); filter.connect(this.engineGain);
                 this.engineGain.connect(this.ctx.destination);
                 this.engineOsc.start();
@@ -423,8 +463,8 @@
                 if (!this.ctx || !this.engineGain) return;
                 const now = this.ctx.currentTime;
                 if (isDriving) {
-                    this.engineGain.gain.setTargetAtTime(0.18, now, 0.1);
-                    this.engineOsc.frequency.setTargetAtTime(35 + speedRatio * 190, now, 0.05);
+                    this.engineGain.gain.setTargetAtTime(0.2, now, 0.1);
+                    this.engineOsc.frequency.setTargetAtTime(30 + speedRatio * 180, now, 0.05);
                 } else {
                     this.engineGain.gain.setTargetAtTime(0, now, 0.1);
                 }
@@ -433,17 +473,17 @@
             playGunshot() {
                 if (!this.ctx) return;
                 const now = this.ctx.currentTime;
-                const bufferSize = this.ctx.sampleRate * 0.22;
+                const bufferSize = this.ctx.sampleRate * 0.2;
                 const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
 
                 const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
                 const filter = this.ctx.createBiquadFilter();
-                filter.type = 'lowpass'; filter.frequency.setValueAtTime(3800, now);
-                filter.frequency.exponentialRampToValueAtTime(120, now + 0.22);
+                filter.type = 'lowpass'; filter.frequency.setValueAtTime(3500, now);
+                filter.frequency.exponentialRampToValueAtTime(100, now + 0.2);
                 const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.85, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+                gain.gain.setValueAtTime(0.8, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
                 noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
                 noise.start(now);
             }
@@ -452,58 +492,41 @@
                 if (!this.ctx) return;
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(950, now);
-                osc.frequency.exponentialRampToValueAtTime(180, now + 0.09);
-                gain.gain.setValueAtTime(0.35, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(150, now + 0.08);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
                 osc.connect(gain); gain.connect(this.ctx.destination);
-                osc.start(now); osc.stop(now + 0.09);
+                osc.start(now); osc.stop(now + 0.08);
             }
 
             playZombieGroan() {
                 if (!this.ctx) return;
                 const now = this.ctx.currentTime;
                 const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
-                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(85 + Math.random() * 35, now);
-                osc.frequency.linearRampToValueAtTime(45 + Math.random() * 20, now + 0.75);
-                const filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(320, now);
-                gain.gain.setValueAtTime(0.25, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.75);
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(65 + Math.random() * 20, now);
+                osc.frequency.linearRampToValueAtTime(35 + Math.random() * 15, now + 1.2);
+                const filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(250, now);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now + 1.2);
                 osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
-                osc.start(now); osc.stop(now + 0.75);
-            }
-
-            playSleepSound() {
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(130, now);
-                osc.frequency.linearRampToValueAtTime(175, now + 0.6);
-                gain.gain.setValueAtTime(0.01, now); gain.gain.linearRampToValueAtTime(0.15, now + 0.6);
-                gain.gain.linearRampToValueAtTime(0.01, now + 1.2);
-                osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(now); osc.stop(now + 1.2);
             }
 
-            playScreech() {
+            playUseItem() {
                 if (!this.ctx) return;
                 const now = this.ctx.currentTime;
-                const bufferSize = this.ctx.sampleRate * 0.08;
-                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-                const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
-                const filter = this.ctx.createBiquadFilter(); filter.type = 'bandpass';
-                filter.frequency.setValueAtTime(2200, now); filter.Q.setValueAtTime(9, now);
-                const gain = this.ctx.createGain(); gain.gain.setValueAtTime(0.12, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
-                noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
-                noise.start(now);
+                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.15);
             }
         }
 
         const audio = new SoundEngine();
 
         // ============================================================================
-        // VISUAL FIRE PARTICLE SYSTEM SHADER
+        // VISUAL FIRE PARTICLE SYSTEM
         // ============================================================================
         function createCampfire(x, y, z) {
             const count = 180;
@@ -525,7 +548,6 @@
             }
 
             geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-
             const mat = new THREE.PointsMaterial({
                 size: 0.85,
                 map: TextureGenerator.createFireParticleTexture(),
@@ -534,26 +556,17 @@
                 depthWrite: false
             });
 
-            const pSystem = new THREE.Points(geo, mat);
-            scene.add(pSystem);
-
+            const pSystem = new THREE.Points(geo, mat); scene.add(pSystem);
             const fireLight = new THREE.PointLight(0xffaa00, 2.5, 15);
-            fireLight.position.set(x, y + 0.5, z);
-            scene.add(fireLight);
+            fireLight.position.set(x, y + 0.5, z); scene.add(fireLight);
 
-            // Log visuals
             const logGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.2);
             const logMat = new THREE.MeshStandardMaterial({ map: TextureGenerator.createBarkTexture() });
             const log1 = new THREE.Mesh(logGeo, logMat); log1.position.set(x, y + 0.1, z); log1.rotation.z = Math.PI / 3;
             const log2 = new THREE.Mesh(logGeo, logMat); log2.position.set(x, y + 0.1, z); log2.rotation.z = -Math.PI / 3;
             scene.add(log1, log2);
 
-            fireParticleSystems.push({
-                mesh: pSystem,
-                velocities: velocities,
-                light: fireLight,
-                baseX: x, baseY: y, baseZ: z
-            });
+            fireParticleSystems.push({ mesh: pSystem, velocities: velocities, light: fireLight, baseX: x, baseY: y, baseZ: z });
         }
 
         function updateFireSystems(delta) {
@@ -581,7 +594,7 @@
         }
 
         // ============================================================================
-        // SCENE & GRAPHICS INITIALIZATION
+        // SCENE INITIALIZATION & GRAPHICS ENGINE
         // ============================================================================
         function init() {
             const container = document.getElementById('canvas-container');
@@ -640,9 +653,6 @@
             animate(0);
         }
 
-        // ============================================================================
-        // PROCEDURAL GEOMETRY BUILDERS
-        // ============================================================================
         function createSky() {
             const skyGeo = new THREE.SphereGeometry(600, 32, 16);
             const skyMat = new THREE.MeshBasicMaterial({ color: 0x7ec0ee, side: THREE.BackSide });
@@ -672,7 +682,7 @@
             terrain.receiveShadow = true; scene.add(terrain);
             colliders.push(terrain);
 
-            // Forest Trees
+            // Forest
             const barkTex = TextureGenerator.createBarkTexture();
             const trunkGeo = new THREE.CylinderGeometry(0.35, 0.65, 8, 8);
             const foliageGeo = new THREE.ConeGeometry(3.8, 9, 8);
@@ -694,6 +704,9 @@
             scene.add(forest);
         }
 
+        // ============================================================================
+        // TOWER WITH UP/DOWN DUAL-DIRECTION STAIRCASE
+        // ============================================================================
         function createFirewatchTowerWithStairs() {
             const tower = new THREE.Group();
             const woodTex = TextureGenerator.createWoodTexture();
@@ -701,7 +714,7 @@
             const darkWoodMat = new THREE.MeshStandardMaterial({ map: woodTex, color: 0x888888, roughness: 0.9 });
             const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, roughness: 0.1, transmission: 0.8 });
 
-            // 1. Support Stilts
+            // Stilts
             const stiltGeo = new THREE.CylinderGeometry(0.5, 0.7, CONFIG.TOWER_HEIGHT, 8);
             [[-5.5, CONFIG.TOWER_HEIGHT / 2, -5.5], [5.5, CONFIG.TOWER_HEIGHT / 2, -5.5],
              [-5.5, CONFIG.TOWER_HEIGHT / 2, 5.5], [5.5, CONFIG.TOWER_HEIGHT / 2, 5.5]].forEach(p => {
@@ -710,22 +723,12 @@
                 tower.add(stilt);
             });
 
-            // 2. Structural Horizontal Cross Braces
-            const horizontalGeo = new THREE.BoxGeometry(11, 0.4, 0.4);
-            [7, 14, 21].forEach(h => {
-                const b1 = new THREE.Mesh(horizontalGeo, woodMat); b1.position.set(0, h, -5.5);
-                const b2 = new THREE.Mesh(horizontalGeo, woodMat); b2.position.set(0, h, 5.5);
-                const b3 = new THREE.Mesh(horizontalGeo, woodMat); b3.position.set(-5.5, h, 0); b3.rotation.y = Math.PI / 2;
-                const b4 = new THREE.Mesh(horizontalGeo, woodMat); b4.position.set(5.5, h, 0); b4.rotation.y = Math.PI / 2;
-                tower.add(b1, b2, b3, b4);
-            });
-
-            // 3. Cabin Deck & Floor Collider
+            // Deck
             const cabinFloor = new THREE.Mesh(new THREE.BoxGeometry(11, 0.2, 11), woodMat);
             cabinFloor.position.set(0, CONFIG.TOWER_HEIGHT + 0.05, 0);
             tower.add(cabinFloor); colliders.push(cabinFloor);
 
-            // 4. MULTI-FLIGHT STAIRCASE SYSTEM (PRECISE RAYCAST COLLISION RAMP)
+            // MULTI-FLIGHT STAIRCASE SYSTEM (Walk Up & Down Smoothly)
             const flights = 4;
             const flightHeight = CONFIG.TOWER_HEIGHT / flights;
             const landingGeo = new THREE.BoxGeometry(3.2, 0.25, 3.2);
@@ -740,10 +743,10 @@
                 landing.position.set(landX, endY, landZ);
                 tower.add(landing); colliders.push(landing);
 
-                // Continuous Ramp Collider for Smooth Downstairs Movement
+                // Ramp Collider for Climbing Up & Walking Down
                 const rampLength = Math.hypot(8.0, flightHeight);
                 const rampAngle = Math.atan2(flightHeight, 8.0);
-                const ramp = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.2, rampLength), woodMat);
+                const ramp = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.2, rampLength + 0.4), woodMat);
 
                 let startX = (f % 2 === 0) ? -4.0 : 4.0;
                 let endX = (f % 2 === 0) ? 4.0 : -4.0;
@@ -768,7 +771,7 @@
                 }
             }
 
-            // 5. Cabin Windows & Roof
+            // Cabin Walls & Roof
             const wallH = 4.5; const size = 11;
             const windowGeo = new THREE.BoxGeometry(size, wallH, 0.08);
             const w1 = new THREE.Mesh(windowGeo, glassMat); w1.position.set(0, CONFIG.TOWER_HEIGHT + wallH / 2, -size / 2);
@@ -841,7 +844,7 @@
         }
 
         // ============================================================================
-        // CONTROLS & PHYSICS ENGINE
+        // CONTROLS & INVENTORY SYSTEM
         // ============================================================================
         function setupControls() {
             const instructions = document.getElementById('instructions');
@@ -866,8 +869,13 @@
                     case 'KeyA': controls.moveLeft = true; break;
                     case 'KeyD': controls.moveRight = true; break;
                     case 'ShiftLeft': controls.drift = true; break;
-                    case 'KeyE': triggerSleepInteraction(); break;
+                    case 'KeyE': triggerSleepOrRepair(); break;
                     case 'KeyF': toggleCarEntry(); break;
+                    case 'Digit1': selectSlot(0); break;
+                    case 'Digit2': selectSlot(1); break;
+                    case 'Digit3': selectSlot(2); break;
+                    case 'Digit4': selectSlot(3); break;
+                    case 'Digit5': selectSlot(4); break;
                 }
             });
 
@@ -882,11 +890,40 @@
             });
 
             document.addEventListener('mousedown', (e) => {
-                if (state.isLocked && e.button === 0 && !state.inCar) shootWeapon();
+                if (state.isLocked && e.button === 0 && !state.inCar) useSelectedItem();
             });
         }
 
-        // Downstairs Collision Gravity Physics
+        function selectSlot(index) {
+            state.activeSlot = index;
+            document.querySelectorAll('.inv-slot').forEach((slot, i) => {
+                slot.classList.toggle('active', i === index);
+            });
+            gunMesh.visible = (state.inventory[index] === 'rifle' && !state.inCar);
+            audio.playUseItem();
+        }
+
+        function useSelectedItem() {
+            const item = state.inventory[state.activeSlot];
+            if (item === 'rifle') {
+                shootWeapon();
+            } else if (item === 'flashlight') {
+                flashlight.intensity = flashlight.intensity > 0 ? 0 : 2.5;
+                audio.playUseItem();
+            } else if (item === 'medkit' && state.medkitCount > 0) {
+                state.towerHealth = Math.min(100, state.towerHealth + 35);
+                state.medkitCount--;
+                document.getElementById('health-display').innerText = `${state.towerHealth}%`;
+                audio.playUseItem();
+            } else if (item === 'planks' && state.plankCount > 0) {
+                state.towerHealth = Math.min(100, state.towerHealth + 15);
+                state.plankCount--;
+                document.getElementById('health-display').innerText = `${state.towerHealth}%`;
+                audio.playUseItem();
+            }
+        }
+
+        // Down/Up Stair Gravity Physics Raycaster
         const raycaster = new THREE.Raycaster();
         const rayDown = new THREE.Vector3(0, -1, 0);
 
@@ -902,7 +939,7 @@
                 yawObject.position.addScaledVector(moveDir, CONFIG.PLAYER_SPEED * delta);
             }
 
-            // Continuous Floor / Ramp / Stair Collision Raycasting
+            // Raycasting Floor and Stair Collision
             raycaster.set(yawObject.position, rayDown);
             const intersects = raycaster.intersectObjects(colliders, false);
 
@@ -911,9 +948,9 @@
 
             const targetEyeY = groundY + CONFIG.PLAYER_HEIGHT;
 
-            if (yawObject.position.y <= targetEyeY + 0.35 && state.playerVy <= 0) {
-                // Smooth Step Snap Downstairs
-                yawObject.position.y += (targetEyeY - yawObject.position.y) * Math.min(1.0, 22.0 * delta);
+            if (yawObject.position.y <= targetEyeY + 0.45 && state.playerVy <= 0) {
+                // Smooth step climb up & down stairs
+                yawObject.position.y += (targetEyeY - yawObject.position.y) * Math.min(1.0, 24.0 * delta);
                 state.playerVy = 0;
             } else {
                 state.playerVy -= CONFIG.GRAVITY * delta;
@@ -927,12 +964,13 @@
 
         function toggleCarEntry() {
             if (!state.inCar) {
-                if (yawObject.position.distanceTo(vehicle.mesh.position) < 5.0) {
+                if (yawObject.position.distanceTo(vehicle.mesh.position) < 5.5) {
                     state.inCar = true; gunMesh.visible = false;
                     document.getElementById('speedometer-panel').style.display = 'block';
                 }
             } else {
-                state.inCar = false; gunMesh.visible = true;
+                state.inCar = false;
+                gunMesh.visible = (state.inventory[state.activeSlot] === 'rifle');
                 document.getElementById('speedometer-panel').style.display = 'none';
                 yawObject.position.copy(vehicle.mesh.position).add(new THREE.Vector3(2.5, CONFIG.PLAYER_HEIGHT, 0));
             }
@@ -949,10 +987,6 @@
                 const steerFactor = controls.drift ? 2.2 : 1.2;
                 if (controls.moveLeft) vehicle.heading += steerFactor * delta * (vehicle.speed / 40);
                 if (controls.moveRight) vehicle.heading -= steerFactor * delta * (vehicle.speed / 40);
-
-                if (controls.drift && Math.abs(vehicle.speed) > 25 && (controls.moveLeft || controls.moveRight)) {
-                    audio.playScreech();
-                }
 
                 vehicle.mesh.rotation.y = vehicle.heading;
                 const forward = new THREE.Vector3(Math.sin(vehicle.heading), 0, Math.cos(vehicle.heading));
@@ -985,11 +1019,11 @@
             scene.add(bullet);
         }
 
-        function triggerSleepInteraction() {
-            if (!state.isNight || state.isSleeping || state.inCar) return;
+        function triggerSleepOrRepair() {
+            if (state.inCar) return;
             const bedPos = new THREE.Vector3(); bedMesh.getWorldPosition(bedPos);
-            if (yawObject.position.distanceTo(bedPos) < 4.8) {
-                state.isSleeping = true; audio.playSleepSound();
+            if (state.isNight && !state.isSleeping && yawObject.position.distanceTo(bedPos) < 4.8) {
+                state.isSleeping = true;
                 const overlay = document.getElementById('sleep-overlay');
                 overlay.style.opacity = '1';
                 setTimeout(() => {
@@ -1019,7 +1053,7 @@
         }
 
         // ============================================================================
-        // MAIN GAME ANIMATION LOOP
+        // GAME LOOP
         // ============================================================================
         let lastTimestamp = 0;
 
@@ -1050,14 +1084,14 @@
                 timeDisplay.innerText = `Day (${Math.floor(rem / 60)}:${(rem % 60).toString().padStart(2, '0')})`;
                 timeDisplay.classList.remove('night');
                 sunLight.intensity = Math.max(0.15, Math.sin(timeAngle) * 1.3);
-                moonLight.intensity = 0; ambientLight.intensity = 0.55; flashlight.intensity = 0;
+                moonLight.intensity = 0; ambientLight.intensity = 0.55;
                 vehicle.headlights.forEach(h => h.intensity = 0);
                 skyMesh.material.color.setHex(0x7ec0ee); scene.fog.color.setHex(0xcce0ff);
             } else {
                 const rem = Math.ceil(CONFIG.TOTAL_CYCLE - state.gameTime);
                 timeDisplay.innerText = `NIGHT (${rem}s)`;
                 timeDisplay.classList.add('night');
-                sunLight.intensity = 0; moonLight.intensity = 0.3; ambientLight.intensity = 0.05; flashlight.intensity = 2.0;
+                sunLight.intensity = 0; moonLight.intensity = 0.3; ambientLight.intensity = 0.05;
                 vehicle.headlights.forEach(h => h.intensity = 2.5);
                 skyMesh.material.color.setHex(0x020307); scene.fog.color.setHex(0x020307);
 
@@ -1067,7 +1101,7 @@
             const bedPos = new THREE.Vector3(); bedMesh.getWorldPosition(bedPos);
             document.getElementById('interact-msg').style.display = (state.isNight && yawObject.position.distanceTo(bedPos) < 4.8 && !state.inCar) ? 'block' : 'none';
 
-            // Bullets Update
+            // Bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
                 b.mesh.position.addScaledVector(b.direction, CONFIG.BULLET_SPEED * delta);
@@ -1089,12 +1123,12 @@
                 if (hit || b.life > 2.0) { scene.remove(b.mesh); bullets.splice(i, 1); }
             }
 
-            // Zombies AI
+            // Slow Zombie AI Movement
             for (let i = zombies.length - 1; i >= 0; i--) {
                 const z = zombies[i];
                 const dir = new THREE.Vector3().subVectors(yawObject.position, z.mesh.position);
                 dir.y = 0; dir.normalize();
-                z.mesh.position.addScaledVector(dir, CONFIG.ZOMBIE_SPEED_GROUND * delta);
+                z.mesh.position.addScaledVector(dir, CONFIG.ZOMBIE_SPEED_GROUND * delta); // SLOW ZOMBIE SPEED
                 z.mesh.lookAt(yawObject.position.x, z.mesh.position.y, yawObject.position.z);
             }
 
